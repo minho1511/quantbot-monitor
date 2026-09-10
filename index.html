@@ -35,7 +35,7 @@ function render(data){
  for(const [id,value] of [['evaluations',r?.evaluations],['structures',r?.unique_structures],['passes',r?.passes]])document.getElementById(id).textContent=value==null?'—':fmt(value);
  document.getElementById('forward').textContent=r?`${rows.filter(x=>x.forward_state==='forward_observation').length} / ${rows.length}`:'—';
  const job=r?.current_job;const symbol=job?.match(/--symbol\s+(\S+)/)?.[1],rule=job?.match(/--rule\s+(\S+)/)?.[1];
- document.getElementById('activity').textContent=!a?'A1 상태를 확인하고 있어요.':!fresh(a)?'A1 연결 확인이 필요합니다. 아래 숫자는 마지막 성공한 조회 기록입니다.':!healthy?'A1 연구 서비스가 실행 상태가 아닙니다.':job?`${names[symbol]||symbol||'전략'} ${rule==='60min'?'60분봉':'15분봉'} — 새 후보 생성·평가 중`:'마지막 상태 생성 시 A1은 다음 회차까지 대기 중이었습니다. (연구 회차 사이 대기 5분 · 모니터 갱신 10분)';
+ document.getElementById('activity').textContent=!a?'A1 상태를 확인하고 있어요.':!fresh(a)?'A1 연결 확인이 필요합니다. 아래 숫자는 마지막 성공한 조회 기록입니다.':!healthy?'A1 연구 서비스가 실행 상태가 아닙니다.':job?`${names[symbol]||symbol||'전략'} ${rule==='60min'?'60분봉':'15분봉'} — 새 후보 생성·평가 중`:'A1 연구 서비스 실행 중 · 회차 사이 대기 없이 새 전략 탐색을 반복합니다.';
  document.getElementById('servers').innerHTML=Object.entries(roles).map(([key,[name,role]])=>{
   const s=servers[key];if(!s)return `<article class="card"><div class="server-name">${name}</div><p>${role}</p><small>조회 중…</small></article>`;
   const good=fresh(s),service=key!=='a1'||s.service?.ActiveState==='active';
