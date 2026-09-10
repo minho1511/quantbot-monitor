@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="status-source" content="https://raw.githubusercontent.com/minho1511/quantbot-monitor/status/status.json"><meta name="refresh-seconds" content="60"><meta name="stale-seconds" content="720">
+<title>퀀트봇 · 연구 모니터</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1016;--panel:#131c26;--border:#263341;--text:#eaf0f7;--muted:#9bacbe;--green:#75e8b3;--amber:#ffc978;--red:#ff8990}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 system-ui,"Malgun Gothic",sans-serif}main{max-width:1240px;margin:auto;padding:30px 28px 50px}header{display:flex;justify-content:space-between;align-items:center;gap:20px}h1{font-size:29px;letter-spacing:-1px;margin:5px 0}h2{font-size:18px;margin:0 0 12px}p{margin:7px 0}.eyebrow{font-size:12px;color:var(--green);letter-spacing:2px}.muted,small{color:var(--muted)}.pill{display:inline-block;border:1px solid var(--border);border-radius:20px;padding:3px 11px;font-size:12px}.ok{color:var(--green)}.warn{color:var(--amber)}.bad{color:var(--red)}button{background:#233448;color:var(--text);border:1px solid #3a536b;border-radius:8px;padding:9px 13px;cursor:pointer}button:hover{background:#304863}.notice{background:#172433;border-left:3px solid #72aeed;padding:13px 17px;margin:23px 0;border-radius:0 8px 8px 0}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.card,.panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:19px}.number{font-size:34px;line-height:1.4;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-1px}.label{font-size:13px;color:var(--muted)}.servers{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:20px 0}.row{display:flex;align-items:center;justify-content:space-between;gap:8px}.server-name{font-size:19px;font-weight:700}.details{font-size:13px;line-height:1.95;margin-top:10px}.panel{margin-top:20px}.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;white-space:nowrap}th{font-size:12px;color:var(--muted);font-weight:500;text-align:left;padding:11px 12px}td{padding:13px 12px;border-top:1px solid var(--border)}td.num{text-align:right;font-variant-numeric:tabular-nums}.symbol{font-weight:650}.sub{font-size:12px;color:var(--muted);margin-left:7px}.foot{font-size:12px;color:var(--muted);margin-top:15px}.progress{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.step{background:#0f1720;border:1px solid var(--border);border-radius:7px;padding:8px 12px;font-size:13px}.step.active{border-color:#437f68;color:var(--green)}#connection{font-size:13px}#errors{white-space:pre-line}.stale{color:var(--amber)}@media(max-width:850px){.cards{grid-template-columns:repeat(2,1fr)}.servers{grid-template-columns:1fr}main{padding:20px 15px}header{align-items:flex-start}h1{font-size:24px}}@media(max-width:450px){.number{font-size:27px}.card{padding:13px}}
+</style>
+<main>
+<header><div><div class="eyebrow">QUANTBOT · LIVE MONITOR</div><h1>지금, 무엇이 돌아가고 있나</h1><div class="muted">AMD 2대의 데이터 수집과 A1의 전략 연구</div></div><div style="text-align:right"><button id="refresh">화면 새로고침</button><div id="connection" class="muted">상태 생성 중…</div></div></header>
+<div class="notice" id="activity" role="status">세 서버에서 현재 상태를 읽어오고 있어요.</div>
+<section class="cards" aria-label="연구 누적 현황"><div class="card"><div class="label">누적 후보 평가</div><div class="number" id="evaluations">—</div><small>종목·봉 주기별 평가 건수</small></div><div class="card"><div class="label">서로 다른 규칙 구조</div><div class="number" id="structures">—</div><small>종목 사이의 같은 규칙도 중복 제거</small></div><div class="card"><div class="label">과거 자료 선별 통과</div><div class="number" id="passes">—</div><small>실전 수익이 입증된 전략 수는 아님</small></div><div class="card"><div class="label">새 데이터 관찰 중</div><div class="number" id="forward">—</div><small>후보·모델을 고정한 뒤 별도 검증</small></div></section>
+<section class="servers" id="servers" aria-label="서버 상태"></section>
+<section class="panel"><div class="row"><h2>종목별 전략 탐색</h2><span class="pill">코인 4종 · ETF 2종</span></div><div class="tablewrap"><table><thead><tr><th>종목</th><th>15분봉 평가</th><th>60분봉 평가</th><th>과거 선별 통과</th><th>새 데이터 검증</th><th>최근 회차 완료</th></tr></thead><tbody id="research"><tr><td colspan="6">A1 조회 중…</td></tr></tbody></table></div><div class="progress"><span class="step active">새 규칙 생성</span><span class="step active">비용 반영 평가</span><span class="step active">손실 원인으로 변형·교배</span><span class="step">후보 고정 후 새 데이터 검증</span></div><p class="foot">탐색에는 완료된 날짜의 자료를 사용합니다. 코인 당일 자료는 다음 날, 주식은 16:01 이후 반영됩니다. 새 자료를 기다리는 동안에도 후보 생성은 계속됩니다.</p></section>
+<section class="panel"><h2>분봉 수집</h2><div class="tablewrap"><table><thead><tr><th>서버</th><th>종목</th><th>저장된 최신 봉 시각</th><th>파일 갱신 시각</th></tr></thead><tbody id="collection"><tr><td colspan="4">수집 서버 조회 중…</td></tr></tbody></table></div><p class="foot">국내 주식은 공급자가 표시한 봉 시각입니다. 장 종료·휴장 중에는 최신 봉이 늘지 않습니다.</p></section>
+<p id="errors" class="bad" role="alert"></p><p class="foot">상태는 5분마다 게시되고, 화면은 1분마다 갱신합니다. PC를 꺼도 서버의 수집·연구와 상태 게시는 계속됩니다. 시간 표시는 한국 시간(KST)입니다.</p>
+</main>
+<script>
+const names={'KRW-BTC':'비트코인','KRW-ETH':'이더리움','KRW-XRP':'XRP','KRW-USDT':'테더','226490':'KODEX 코스피','252670':'KODEX 곱버스'};
+const roles={a1:['A1','새 전략 생성 · 개선 · 검증'],amd1:['AMD1','코인 거래 · 분봉 수집'],amd2:['AMD2','코스피 · 곱버스 분봉 수집']};
+const source=document.querySelector('meta[name="status-source"]').content;
+const refreshSeconds=Number(document.querySelector('meta[name="refresh-seconds"]').content);
+const staleSeconds=Number(document.querySelector('meta[name="stale-seconds"]').content);
+const fmt=n=>Number(n||0).toLocaleString('ko-KR');
+const esc=v=>String(v??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function date(v){if(!v)return null;return new Date(/[zZ]$|[+-]\d\d:\d\d$/.test(v)?v:v.replace(' ','T')+'+09:00')}
+function tm(v,full=false){const d=date(v);return d&&!isNaN(d)?d.toLocaleString('ko-KR',{timeZone:'Asia/Seoul',...(full?{month:'2-digit',day:'2-digit'}:{}),hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}):'기록 없음'}
+function fresh(s){const d=date(s?.checked_at);return s?.reachable&&d&&Date.now()-d.getTime()<staleSeconds*1000}
+function badge(text,cls){return `<span class="pill ${cls}">${esc(text)}</span>`}
+function stateLabel(rows){if(rows.some(r=>r.forward_state==='forward_observation'))return '새 데이터 관찰 중';if(rows.every(r=>r.forward_state==='awaiting_new_data'))return '새 자료 대기';return '확인 필요'}
+function render(data){
+ const servers=data.servers||{},a=servers.a1,r=a?.research,rows=r?.rows||[],healthy=fresh(a)&&a.service?.ActiveState==='active';
+ document.getElementById('connection').textContent='최근 조회 '+tm(data.updated_at);
+ document.getElementById('connection').className=Object.values(servers).length===3&&Object.values(servers).every(fresh)?'ok':'warn';
+ for(const [id,value] of [['evaluations',r?.evaluations],['structures',r?.unique_structures],['passes',r?.passes]])document.getElementById(id).textContent=value==null?'—':fmt(value);
+ document.getElementById('forward').textContent=r?`${rows.filter(x=>x.forward_state==='forward_observation').length} / ${rows.length}`:'—';
+ const job=r?.current_job;const symbol=job?.match(/--symbol\s+(\S+)/)?.[1],rule=job?.match(/--rule\s+(\S+)/)?.[1];
+ document.getElementById('activity').textContent=!a?'A1 상태를 확인하고 있어요.':!fresh(a)?'A1 연결 확인이 필요합니다. 아래 숫자는 마지막 성공한 조회 기록입니다.':!healthy?'A1 연구 서비스가 실행 상태가 아닙니다.':job?`${names[symbol]||symbol||'전략'} ${rule==='60min'?'60분봉':'15분봉'} — 새 후보 생성·평가 중`:'마지막 상태 생성 시 A1은 다음 회차까지 대기 중이었습니다. (회차 사이 5분)';
+ document.getElementById('servers').innerHTML=Object.entries(roles).map(([key,[name,role]])=>{
+  const s=servers[key];if(!s)return `<article class="card"><div class="server-name">${name}</div><p>${role}</p><small>조회 중…</small></article>`;
+  const good=fresh(s),service=key!=='a1'||s.service?.ActiveState==='active';
+  const details=key==='a1'?`연구 서비스 ${esc(s.service?.ActiveState||'미확인')} · 자동 재시작 ${esc(s.service?.NRestarts??'—')}회<br>연구 로그 ${tm(s.research?.log_updated)}<br>디스크 여유 ${esc(s.disk_free_gb)} GB`:`분봉 수집 기록 ${tm(s.collection_at)}<br>A1 전송 기록 ${tm(s.sync_at)}${key==='amd1'?`<br>거래 봇 최근 실행 ${tm(s.trading?.last_run,true)}${s.trading?.halted?' · 정지 상태':''}`:''}`;
+  return `<article class="card"><div class="row"><span class="server-name">${name}</span>${badge(!good?'연결 확인 필요':!service?'연구 정지':'상태 수신',good&&service?'ok':'bad')}</div><p class="muted">${role}</p><div class="details">${details}</div><small>상태 생성 ${tm(s.checked_at)}</small></article>`;
+ }).join('');
+ document.getElementById('research').innerHTML=Object.entries(names).map(([symbol,name])=>{const set=rows.filter(x=>x.symbol===symbol);if(!set.length)return `<tr><td>${name}</td><td colspan="5">조회 결과 없음</td></tr>`;const latest=set.map(x=>x.updated_at).sort().at(-1);const cell=rule=>{const x=set.find(x=>x.rule===rule);return x?fmt(x.evaluations):'—'};return `<tr><td><span class="symbol">${name}</span><span class="sub">${symbol}</span></td><td class="num">${cell('15min')}</td><td class="num">${cell('60min')}</td><td class="num">${fmt(set.reduce((n,x)=>n+x.passes,0))}</td><td>${badge(stateLabel(set),'warn')}</td><td>${tm(latest)}</td></tr>`}).join('');
+ document.getElementById('collection').innerHTML=['amd1','amd2'].flatMap(key=>(servers[key]?.data||[]).map(d=>`<tr><td>${roles[key][0]}${fresh(servers[key])?'':' · 이전 기록'}</td><td>${esc(names[d.symbol]||d.symbol)}</td><td>${tm(d.latest_bar,true)}</td><td>${tm(d.updated_at,true)}</td></tr>`)).join('')||'<tr><td colspan="4">조회 결과 없음</td></tr>';
+ const errors=Object.entries(servers).filter(([,s])=>!fresh(s)).map(([k,s])=>`${roles[k][0]}: ${s.error||'최근 조회가 오래되었습니다.'} 마지막 성공 ${tm(s.checked_at,true)}`);
+ if(healthy&&r?.log_updated&&Date.now()-date(r.log_updated)>15*60000)errors.push('A1 연구 로그가 15분 넘게 갱신되지 않았습니다. 진행 상태를 확인해야 합니다.');
+ document.getElementById('errors').textContent=errors.join('\n');
+}
+let loading=false;async function refresh(){if(loading)return;loading=true;try{const res=await fetch(source+'?t='+Math.floor(Date.now()/60000),{cache:'no-store'});if(!res.ok)throw Error('HTTP '+res.status);render(await res.json())}catch(e){document.getElementById('activity').textContent='모니터 연결이 끊겼습니다. 화면의 수치는 마지막 조회 기록입니다.';document.getElementById('connection').textContent='연결 끊김';document.getElementById('connection').className='bad'}finally{loading=false}}
+document.getElementById('refresh').addEventListener('click',refresh);refresh();setInterval(refresh,refreshSeconds*1000);
+</script>
+</html>
