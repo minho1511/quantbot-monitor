@@ -1,4 +1,4 @@
-# Quantbot monitor
+# 오라클 퀀트봇
 
 Read-only operational status for a personal research project.
 
