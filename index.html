@@ -4,13 +4,14 @@
 <meta name="status-source" content="https://raw.githubusercontent.com/minho1511/quantbot-monitor/status/status.json"><meta name="refresh-seconds" content="60"><meta name="stale-seconds" content="900">
 <title>오라클 퀀트봇</title>
 <style>
+button:disabled{opacity:.7;cursor:wait}
 :root{color-scheme:dark;--bg:#0b1016;--panel:#131c26;--border:#263341;--text:#eaf0f7;--muted:#9bacbe;--green:#75e8b3;--amber:#ffc978;--red:#ff8990}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 system-ui,"Malgun Gothic",sans-serif}main{max-width:1240px;margin:auto;padding:30px 28px 50px}header{display:flex;justify-content:space-between;align-items:center;gap:20px}h1{font-size:29px;letter-spacing:-1px;margin:5px 0}h2{font-size:18px;margin:0 0 12px}p{margin:7px 0}.eyebrow{font-size:12px;color:var(--green);letter-spacing:2px}.muted,small{color:var(--muted)}.pill{display:inline-block;border:1px solid var(--border);border-radius:20px;padding:3px 11px;font-size:12px}.ok{color:var(--green)}.warn{color:var(--amber)}.bad{color:var(--red)}button{background:#233448;color:var(--text);border:1px solid #3a536b;border-radius:8px;padding:9px 13px;cursor:pointer}button:hover{background:#304863}.notice{background:#172433;border-left:3px solid #72aeed;padding:13px 17px;margin:23px 0;border-radius:0 8px 8px 0}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.card,.panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:19px}.number{font-size:34px;line-height:1.4;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-1px}.label{font-size:13px;color:var(--muted)}.servers{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:20px 0}.row{display:flex;align-items:center;justify-content:space-between;gap:8px}.server-name{font-size:19px;font-weight:700}.details{font-size:13px;line-height:1.95;margin-top:10px}.panel{margin-top:20px}.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;white-space:nowrap}th{font-size:12px;color:var(--muted);font-weight:500;text-align:left;padding:11px 12px}td{padding:13px 12px;border-top:1px solid var(--border)}td.num{text-align:right;font-variant-numeric:tabular-nums}.symbol{font-weight:650}.sub{font-size:12px;color:var(--muted);margin-left:7px}.foot{font-size:12px;color:var(--muted);margin-top:15px}.progress{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.step{background:#0f1720;border:1px solid var(--border);border-radius:7px;padding:8px 12px;font-size:13px}.step.active{border-color:#437f68;color:var(--green)}#connection{font-size:13px}#errors{white-space:pre-line}.stale{color:var(--amber)}@media(max-width:850px){.cards{grid-template-columns:repeat(2,1fr)}.servers{grid-template-columns:1fr}main{padding:20px 15px}header{align-items:flex-start}h1{font-size:24px}}@media(max-width:450px){.number{font-size:27px}.card{padding:13px}}
 </style>
 <style>
 .work-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.work-box{background:#0f1720;border:1px solid var(--border);border-radius:9px;padding:16px}.work-title{font-size:22px;font-weight:700;margin:5px 0}.ideas{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}.idea{border-top:2px solid #4d7191;padding:13px;background:#0f1720;border-radius:0 0 8px 8px}.idea h3{font-size:15px;line-height:1.5;margin:10px 0}.idea p{font-size:13px}.work-note{font-size:13px;color:var(--muted)}@media(max-width:850px){.work-grid,.ideas{grid-template-columns:1fr}}@media(max-width:450px){header{flex-wrap:wrap}header>div:last-child{text-align:left!important}.work-title{font-size:20px}}
 </style>
 <main>
-<header><div><div class="eyebrow">ORACLE QUANTBOT · LIVE MONITOR</div><h1>오라클 퀀트봇</h1><div class="muted">AMD 2대의 데이터 수집과 A1의 전략 연구</div></div><div style="text-align:right"><button id="refresh">화면 새로고침</button><div class="label">모니터 상태 갱신: 10분마다</div><div id="connection" class="muted">상태 생성 중…</div></div></header>
+<header><div><div class="eyebrow">ORACLE QUANTBOT · LIVE MONITOR</div><h1>오라클 퀀트봇</h1><div class="muted">AMD 2대의 데이터 수집과 A1의 전략 연구</div></div><div style="text-align:right"><button id="refresh" type="button" title="최근에 게시된 상태를 다시 불러옵니다.">화면 새로고침</button><div id="refresh-status" class="label" role="status" aria-live="polite"></div><div class="label">모니터 상태 갱신: 10분마다</div><div id="connection" class="muted">상태 생성 중…</div></div></header>
 <div class="notice" id="activity" role="status">세 서버에서 현재 상태를 읽어오고 있어요.</div>
 <section class="panel" aria-labelledby="a1-heading"><div class="row"><h2 id="a1-heading">A1이 하는 일</h2><span class="pill" id="work-observed">상태 확인 중</span></div><div class="work-grid"><div class="work-box"><div class="label">상태 생성 시점의 실행 작업</div><div class="work-title" id="work-current">A1 조회 중…</div><p id="work-description" class="work-note"></p></div><div class="work-box"><div class="label">가장 최근에 끝낸 연구 회차</div><div id="work-latest">완료 기록 확인 중…</div></div></div><p class="work-note">A1은 매수·매도 규칙을 만들고, 수수료를 반영해 과거 자료에서 평가한 뒤 손실 원인에 따라 변형·조합합니다. 고정한 후보는 이후에 쌓이는 새 자료로 따로 검증합니다.</p><h2 style="margin-top:20px">최근 회차에서 평가한 아이디어</h2><p class="work-note">최근 완료 회차 3개의 마지막 후보입니다. 아래 수익률·승률은 과거 자료의 개발 평가 결과입니다.</p><div class="ideas" id="work-ideas">아이디어 기록 확인 중…</div><p class="foot">상태는 10분마다 갱신됩니다. 이 패널은 표시된 상태 생성 시점의 기록입니다. 통과한 후보도 실전 성과가 입증된 것은 아닙니다.</p></section>
 <section class="cards" aria-label="연구 누적 현황"><div class="card"><div class="label">누적 후보 평가</div><div class="number" id="evaluations">—</div><small>종목·봉 주기별 평가 건수</small></div><div class="card"><div class="label">서로 다른 규칙 구조</div><div class="number" id="structures">—</div><small>종목 사이의 같은 규칙도 중복 제거</small></div><div class="card"><div class="label">과거 자료 선별 통과</div><div class="number" id="passes">—</div><small>실전 수익이 입증된 전략 수는 아님</small></div><div class="card"><div class="label">새 데이터 관찰 중</div><div class="number" id="forward">—</div><small>후보·모델을 고정한 뒤 별도 검증</small></div></section>
@@ -71,7 +72,30 @@ function render(data){
  if(healthy&&r?.log_updated&&Date.now()-date(r.log_updated)>15*60000)errors.push('A1 연구 로그가 15분 넘게 갱신되지 않았습니다. 진행 상태를 확인해야 합니다.');
  document.getElementById('errors').textContent=errors.join('\n');
 }
-let loading=false;async function refresh(){if(loading)return;loading=true;try{const res=await fetch(source+'?t='+Math.floor(Date.now()/60000),{cache:'no-store'});if(!res.ok)throw Error('HTTP '+res.status);render(await res.json())}catch(e){document.getElementById('activity').textContent='모니터 연결이 끊겼습니다. 화면의 수치는 마지막 조회 기록입니다.';document.getElementById('connection').textContent='연결 끊김';document.getElementById('connection').className='bad'}finally{loading=false}}
+let loading=false,lastUpdated=null;
+async function refresh(){
+ if(loading)return;
+ loading=true;
+ const button=document.getElementById('refresh'),feedback=document.getElementById('refresh-status');
+ button.disabled=true;button.textContent='확인 중…';button.setAttribute('aria-busy','true');
+ feedback.textContent='게시된 최신 상태를 확인하고 있어요.';feedback.className='label';
+ const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),15000);
+ try{
+  const res=await fetch(source+'?t='+Date.now(),{cache:'no-store',signal:controller.signal});
+  if(!res.ok)throw Error('HTTP '+res.status);
+  const data=await res.json();
+  render(data);
+  feedback.textContent=tm(new Date().toISOString())+' 확인 · '+(data.updated_at===lastUpdated?'새로 게시된 자료 없음':'새 상태 반영');
+  lastUpdated=data.updated_at;
+ }catch(e){
+  document.getElementById('activity').textContent='상태를 불러오지 못했습니다. 화면의 수치는 마지막 조회 기록입니다.';
+  document.getElementById('connection').textContent='연결 끊김';document.getElementById('connection').className='bad';
+  feedback.textContent=controller.signal.aborted?'응답이 늦어 확인을 중단했습니다. 다시 눌러주세요.':'확인 실패 · 다시 눌러주세요.';
+  feedback.className='label bad';
+ }finally{
+  clearTimeout(timeout);loading=false;button.disabled=false;button.textContent='화면 새로고침';button.setAttribute('aria-busy','false');
+ }
+}
 document.getElementById('refresh').addEventListener('click',refresh);refresh();setInterval(refresh,refreshSeconds*1000);
 </script>
 </html>
