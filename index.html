@@ -139,7 +139,7 @@ function renderMandatePaper(){
  document.getElementById('mandate-paper-page').textContent=`${mandatePaperPage+1} / ${pages}페이지 · 페이지당 ${size}개`;
  document.getElementById('mandate-paper-prev').disabled=mandatePaperPage===0;
  document.getElementById('mandate-paper-next').disabled=mandatePaperPage>=pages-1;
- document.getElementById('mandate-paper-trials').innerHTML=visible.slice(mandatePaperPage*size,(mandatePaperPage+1)*size).map(t=>{const n=t.normal||{},s=t.stress||{};return `<article class="candidate"><h3>${esc(mandateFamilies[t.family]||'가설')} · ${t.rule==='240min'?'4시간':'1시간'}</h3><p>${esc(mandateFilters[t.filters]||'')} · ${t.state==='observing'?'새 데이터 관찰':t.state==='awaiting_new_data'?'등록 후 새 봉 대기':'실행 점검 필요'}</p><div class="candidate-code">후보 ${esc(String(t.id).slice(0,12))}</div><p>고정 ${tm(t.frozen_at,true)}<br>새 봉 ${fmt(t.sessions)}개 · 가격 관찰 ${tm(t.last_quote)}</p><p>총 모의 수익 <strong>${pct(n.return_fraction)}</strong> · 낙폭 ${pct(n.mdd)}<br>청산 ${fmt(n.trades)}회 · 승률 ${pct(n.win_rate)}<br>보유 ${fmt(n.open_positions)}종목 · 가상 주문 대기 ${fmt(n.pending_orders)}개<br>비용 2배·추가 지연 수익 ${pct(s.return_fraction)}</p>${n.paused||s.paused?'<p class="warn">계좌 손실 조건으로 신규 진입 중단</p>':''}</article>`}).join('')||'<p class="muted">표시 조건에 맞는 후보가 없습니다. 새 기준 통과 후보가 등록되면 여기에 표시됩니다.</p>';
+ document.getElementById('mandate-paper-trials').innerHTML=visible.slice(mandatePaperPage*size,(mandatePaperPage+1)*size).map(t=>{const n=t.normal||{},s=t.stress||{};return `<article class="candidate"><h3>${esc(mandateFamilies[t.family]||'가설')} · ${t.rule==='240min'?'4시간':'1시간'}</h3><p>${esc(mandateFilters[t.filters]||'')} · ${t.state==='observing'?'새 데이터 관찰':t.state==='awaiting_new_data'?'등록 후 새 봉 대기':t.state==='strategy_prices_delayed'?'전략 봉 지연 · 손실 감시 계속':'실행 점검 필요'}</p><div class="candidate-code">후보 ${esc(String(t.id).slice(0,12))}</div><p>고정 ${tm(t.frozen_at,true)}<br>새 봉 ${fmt(t.sessions)}개 · 가격 관찰 ${tm(t.last_quote)}</p><p>총 모의 수익 <strong>${pct(n.return_fraction)}</strong> · 낙폭 ${pct(n.mdd)}<br>청산 ${fmt(n.trades)}회 · 승률 ${pct(n.win_rate)}<br>보유 ${fmt(n.open_positions)}종목 · 가상 주문 대기 ${fmt(n.pending_orders)}개<br>비용 2배·추가 지연 수익 ${pct(s.return_fraction)}</p>${n.paused||s.paused?'<p class="warn">계좌 손실 조건으로 신규 진입 중단</p>':''}</article>`}).join('')||'<p class="muted">표시 조건에 맞는 후보가 없습니다. 새 기준 통과 후보가 등록되면 여기에 표시됩니다.</p>';
 }
 function renderOperations(r){
  const c=r?.continuous_research,e=r?.execution_evidence,g=r?.health_guard;
@@ -177,6 +177,7 @@ function renderContinuous(c,p,healthy){
   document.getElementById('mandate-paper-status').className='pill '+(good?'ok':'warn');
   document.getElementById('mandate-paper-summary').textContent=`AMD1 확인 ${tm(p.checked_at)} · 입력 자료 ${tm(p.feed_at)} · 등록 대기 ${fmt(p.queued||0)}개. ${p.validation_version==='strict-v2'?'수정 기준으로 통과한 후보를 등록하고, 이후 고정 시각과 누적 기록을 유지합니다.':'고정 시각과 누적 관찰 기록을 유지합니다.'}`;
   document.getElementById('mandate-paper-legacy').textContent=p.legacy?.state==='retired_engine_v1'?`수정 전 ${fmt(p.legacy.trials)}개 계좌는 원장과 최초 고정 시각을 보존하고 관찰을 종료했습니다. 아래 수정 후 계좌와 성적을 이어 붙이지 않습니다.`:'';
+  if(p.prior_engine?.state==='retired_engine_v2')document.getElementById('mandate-paper-legacy').textContent+=` 이후 등록된 ${fmt(p.prior_engine.trials)}개 계좌도 전략 봉 지연 시 손실 감시를 보완하면서 별도 보존했습니다. 현재 계좌는 보완 후 시각에 새로 고정했습니다.`;
   renderMandatePaper();
  }
 }
