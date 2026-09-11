@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ko">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="status-source" content="https://raw.githubusercontent.com/minho1511/quantbot-monitor/status/status.json"><meta name="refresh-seconds" content="60"><meta name="stale-seconds" content="900">
+<meta name="status-source" content="/api/status"><meta name="refresh-seconds" content="15"><meta name="stale-seconds" content="150">
 <title>오라클 퀀트봇</title>
 <style>
 button:disabled{opacity:.7;cursor:wait}
@@ -23,6 +23,7 @@ button:disabled{opacity:.7;cursor:wait}
 <main>
 <header><div><div class="eyebrow">ORACLE QUANTBOT · LIVE MONITOR</div><h1>오라클 퀀트봇</h1><div class="muted">AMD 2대의 데이터 수집과 A1의 전략 연구</div></div><div style="text-align:right"><button id="refresh" type="button" title="최근에 게시된 상태를 다시 불러옵니다.">화면 새로고침</button><div id="refresh-status" class="label" role="status" aria-live="polite"></div><div id="connection" class="muted">서버 확인 중…</div></div></header>
 <div class="notice" id="activity" role="status">세 서버에서 현재 상태를 읽어오고 있어요.</div>
+<section class="panel" id="mandate-research" hidden><div class="row"><h2>새 운용 조건으로 진행하는 A1 연구</h2><span class="pill" id="mandate-status">연구 확인 중</span></div><p id="mandate-summary"></p><p>BTC·ETH·XRP가 하나의 자금 한도를 공유합니다. 1시간·4시간봉에서 추세 지속, 되돌림, 변동성 수축 후 돌파를 검사하고 거래량·장세 조건의 효과를 비교합니다.</p><div id="mandate-results"></div><p id="mandate-forward" class="work-note"></p><p class="foot">과거 자료를 고정한 제한된 실험입니다. 비용·체결 지연 스트레스와 시간순 선택을 검사합니다. 호가 수용량과 실제 비용은 추가 확인이 필요하며, 새 조건의 AMD1 모의거래·실주문에는 아직 연결하지 않았습니다. 봉 종료 때의 손실 검사이므로 실제 손실 상한을 보장하지 않습니다.</p></section>
 <section class="panel shortlist" id="long-validation" aria-labelledby="long-heading">
 <div class="row"><div><div class="eyebrow">FIVE-YEAR VALIDATION</div><h2 id="long-heading">5년 검증 · 시장 구분 비교</h2></div><span class="pill" id="long-status">장기 검증 확인 중</span></div>
 <p>최근 180일에서 만든 규칙을 고정하고, 이전 기간을 포함한 5년 자료로 다시 검사합니다. <strong>시장 구분 없는 원본과 상승·하락·횡보 필터를 같은 기간·비용으로 비교합니다.</strong></p>
@@ -46,7 +47,7 @@ button:disabled{opacity:.7;cursor:wait}
 <section class="servers" id="servers" aria-label="서버 상태"></section>
 <section class="panel"><div class="row"><h2>종목별 전략 탐색</h2><span class="pill">코인 4종 · ETF 2종</span></div><div class="tablewrap"><table><thead><tr><th>종목</th><th>15분봉 평가</th><th>60분봉 평가</th><th>과거 선별 통과</th><th>새 데이터 검증</th><th>최근 회차 완료</th></tr></thead><tbody id="research"><tr><td colspan="6">A1 조회 중…</td></tr></tbody></table></div><div class="progress"><span class="step">새 규칙 생성</span><span class="step">비용 반영 평가</span><span class="step">손실 원인으로 변형·교배</span><span class="step">후보 고정 후 새 데이터 검증</span></div><p class="foot">탐색에는 완료된 날짜의 자료를 사용합니다. 코인 당일 자료는 다음 날, 주식은 16:01 이후 반영됩니다. 새 자료를 기다리는 동안에도 후보 생성은 계속됩니다.</p></section>
 <section class="panel"><h2>분봉 수집</h2><div class="tablewrap"><table><thead><tr><th>서버</th><th>종목</th><th>저장된 최신 봉 시각</th><th>파일 갱신 시각</th></tr></thead><tbody id="collection"><tr><td colspan="4">수집 서버 조회 중…</td></tr></tbody></table></div><p class="foot">국내 주식은 공급자가 표시한 봉 시각입니다. 장 종료·휴장 중에는 최신 봉이 늘지 않습니다.</p></section>
-<p id="errors" class="bad" role="alert"></p><p class="foot">서버 상태와 후보 목록은 10분마다 게시하며, 화면은 1분마다 게시된 자료를 확인합니다. 이 PC를 꺼도 Oracle의 수집·연구는 계속됩니다. 시간 표시는 한국 시간(KST)입니다.</p>
+<p id="errors" class="bad" role="alert"></p><p class="foot">서버 조회는 60초마다, 화면은 15초마다 갱신합니다. 이 PC를 꺼도 Oracle의 수집·연구는 계속됩니다. 시간 표시는 한국 시간(KST)입니다.</p>
 </main>
 <script>
 const names={'KRW-BTC':'비트코인','KRW-ETH':'이더리움','KRW-XRP':'XRP','KRW-USDT':'테더','226490':'KODEX 코스피','252670':'KODEX 곱버스'};
@@ -122,8 +123,24 @@ function renderShortlist(){
  document.getElementById('shortlist-watch-title').textContent=`승률은 높지만 추가 확인이 필요한 후보 · ${watch.length}개 표시`;
  document.getElementById('shortlist-watch').innerHTML=watch.map(candidateCard).join('')||'<p class="muted">표시할 추가 확인 후보가 없습니다.</p>';
 }
+const mandateFamilies={trend:'추세 지속',reversion:'과도한 이탈 후 회복',compression_breakout:'변동성 수축 후 돌파'};
+const mandateFilters={base:'기본형',volume:'거래량 추가',regime:'장세 조건 추가',volume_and_regime:'거래량·장세 추가'};
+function renderMandate(m){
+ const panel=document.getElementById('mandate-research');panel.hidden=!m;if(!m)return;
+ document.getElementById('mandate-status').textContent=m.state==='error'?'실행 점검 필요':m.complete?'첫 배치 완료 · 다음 검토 대기':`검사 ${fmt(m.completed_trials)} / ${fmt(m.total_trials)}`;
+ document.getElementById('mandate-summary').textContent=`고정 규칙 ${fmt(m.hypothesis_count)}개 · 주기별 검사 ${fmt(m.total_trials)}개 · 과거 선별 통과 ${fmt(m.historical_pass_count)}개. 자료 ${m.data_start?.slice(0,10)||'—'} ~ ${m.data_end?.slice(0,10)||'—'}. 연구 확인 ${tm(m.checked_at)}.`;
+ document.getElementById('mandate-results').innerHTML=(m.candidates||[]).slice(0,6).map(c=>`<article class="idea"><strong>${esc(mandateFamilies[c.family]||'가설')} · ${c.rule==='240min'?'4시간':'1시간'} · ${esc(mandateFilters[c.filters]||'조건')}</strong><p>${c.state==='historical_screen_pass'?'과거 선별 통과 · 추가 검증 필요':'현재 기준 미달'} · 순수익 ${pct(c.normal?.return)} · 낙폭 ${pct(c.normal?.mdd)} · ${fmt(c.normal?.trades)}거래 · 승률 ${pct(c.normal?.win_rate)}<br>비용 2배·추가 지연 수익 ${pct(c.stress?.return)}${c.paused?' · 계좌 중단 조건 발생':''}</p></article>`).join('')||'첫 검사 결과를 기다리고 있습니다.';
+ document.getElementById('mandate-forward').textContent=(m.walk_forward||[]).map(w=>`${w.rule==='240min'?'4시간':'1시간'} 시간순 선택: ${w.folds}개 구간, 현금 선택 ${w.cash_folds}개, 수익 ${pct(w.metrics?.return)}, 낙폭 ${pct(w.metrics?.mdd)}`).join(' / ')||'고정 후보 검사 후 과거 24개월·조정 6개월을 보고 다음 3개월을 평가합니다. 이미 본 과거 자료의 재현 검사입니다.';
+ document.getElementById('long-heading').textContent='이전 5년 검사 기록 · 시장 구분 비교';
+}
 function renderWork(a,r,healthy,symbol,rule){
  const observed=document.getElementById('work-observed');observed.textContent=(fresh(a)?'확인 ':'이전 기록 ')+tm(a?.checked_at);observed.className='pill '+(healthy?'ok':'warn');
+ if(r?.mandate_research){const m=r.mandate_research,c=m.current||{};
+  document.getElementById('work-current').textContent=!healthy?'연구 실행 확인 필요':m.state==='error'?'새 연구 실행 점검 필요':m.complete?'고정 배치 완료 · 다음 검토 대기':`${mandateFamilies[c.family]||'운용 조건 검사'} ${c.rule==='240min'?'4시간':c.rule==='60min'?'1시간':''}`;
+  document.getElementById('work-description').textContent=`세 자산의 공통 예산·주문 크기·손실 대응을 포함한 검사입니다. 완료 ${fmt(m.completed_trials)} / ${fmt(m.total_trials)}. 같은 자료에서 후보를 무한 변형하지 않습니다.`;
+  document.getElementById('work-latest').textContent=`과거 선별 통과 ${fmt(m.historical_pass_count)}개 · 새 AMD1 등록 ${fmt(m.paper_ready_count)}개 · 다음 검토 ${tm(m.next_review_after,true)}`;
+  document.getElementById('work-ideas').textContent='최신 가설별 결과는 화면 상단의 새 운용 조건 연구에서 확인할 수 있습니다. 아래 기존 탐색 누적 수와 묶음 성적은 이전 연구 기록입니다.';return;
+ }
  document.getElementById('work-current').textContent=!fresh(a)?'최신 작업 확인 필요':!healthy?'연구 서비스 정지':symbol?targetLabel(symbol,rule):'연구 서비스 실행 중';
  const elapsed=r?.current_elapsed_seconds;
  document.getElementById('work-description').textContent=!healthy?'아래는 마지막으로 받은 완료 기록입니다.':symbol?`전략 탐색 작업 실행 중${Number.isInteger(elapsed)?' · 이 작업 시작 후 '+fmt(elapsed)+'초':''}. 자료 준비부터 후보 생성·평가, 새 자료 검증까지 한 회차를 처리합니다.`:'종목을 바꾸는 순간에는 실행 작업이 포착되지 않을 수 있습니다. 아래에서 최근 완료 기록을 확인할 수 있습니다.';
@@ -143,10 +160,12 @@ function render(data){
  const job=r?.current_job;const symbol=job?.match(/--symbol\s+(\S+)/)?.[1],rule=job?.match(/--rule\s+(\S+)/)?.[1];
  renderWork(a,r,healthy,symbol,rule);
  latestLongValidation=r?.long_validation;renderLongValidation(latestLongValidation);
+ renderMandate(r?.mandate_research);
  latestShortlist=r?.shortlist;shortlistServer=a;renderShortlist();
  renderPaper(r?.paper);
  renderPaper(r?.validated_paper,'validated-paper');
  document.getElementById('activity').textContent=!a?'A1 상태를 확인하고 있어요.':!fresh(a)?'A1 연결 확인이 필요합니다. 아래 숫자는 마지막 성공한 조회 기록입니다.':!healthy?'A1 연구 서비스가 실행 상태가 아닙니다.':job?`${names[symbol]||symbol||'전략'} ${rule==='60min'?'60분봉':'15분봉'} — 상태 생성 시점에 전략 탐색 작업 실행 중`:'A1 연구 서비스 실행 중 · 회차 사이 대기 없이 새 전략 탐색을 반복합니다.';
+ if(r?.mandate_research){document.getElementById('forward').textContent='이전 연구 기록';if(healthy)document.getElementById('activity').textContent=r.mandate_research.state==='error'?'A1 새 연구 실행을 점검해야 합니다.':r.mandate_research.complete?'A1 고정 연구 배치 완료 · 다음 검토일 대기':'A1이 새 운용 조건에 맞춰 가설별 연구를 진행하고 있습니다.';}
  document.getElementById('servers').innerHTML=Object.entries(roles).map(([key,[name,role]])=>{
   const s=servers[key];if(!s)return `<article class="card"><div class="server-name">${name}</div><p>${role}</p><small>조회 중…</small></article>`;
   const good=fresh(s),service=key!=='a1'||s.service?.ActiveState==='active';
