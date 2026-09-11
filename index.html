@@ -23,7 +23,9 @@ button:disabled{opacity:.7;cursor:wait}
 <main>
 <header><div><div class="eyebrow">ORACLE QUANTBOT · LIVE MONITOR</div><h1>오라클 퀀트봇</h1><div class="muted">AMD 2대의 데이터 수집과 A1의 전략 연구</div></div><div style="text-align:right"><button id="refresh" type="button" title="최근에 게시된 상태를 다시 불러옵니다.">화면 새로고침</button><div id="refresh-status" class="label" role="status" aria-live="polite"></div><div id="connection" class="muted">서버 확인 중…</div></div></header>
 <div class="notice" id="activity" role="status">세 서버에서 현재 상태를 읽어오고 있어요.</div>
-<section class="panel" id="mandate-research" hidden><div class="row"><h2>새 운용 조건으로 진행하는 A1 연구</h2><span class="pill" id="mandate-status">연구 확인 중</span></div><p id="mandate-summary"></p><p>BTC·ETH·XRP가 하나의 자금 한도를 공유합니다. 1시간·4시간봉에서 추세 지속, 되돌림, 변동성 수축 후 돌파를 검사하고 거래량·장세 조건의 효과를 비교합니다.</p><div id="mandate-results"></div><p id="mandate-forward" class="work-note"></p><p class="foot">과거 자료를 고정한 제한된 실험입니다. 비용·체결 지연 스트레스와 시간순 선택을 검사합니다. 호가 수용량과 실제 비용은 추가 확인이 필요하며, 새 조건의 AMD1 모의거래·실주문에는 아직 연결하지 않았습니다. 봉 종료 때의 손실 검사이므로 실제 손실 상한을 보장하지 않습니다.</p></section>
+<section class="panel" id="continuous-research" hidden><div class="row"><h2>A1 · 추가 가설 연구와 검증</h2><span class="pill" id="continuous-status">확인 중</span></div><p id="continuous-summary"></p><p id="continuous-current" class="work-note"></p><p>추세 눌림 후 회복, 돌파 가격 재확인, RSI 회복, 박스권 반등, 모멘텀 전환, 거래량·변동성 동반 돌파를 검사합니다. 각 규칙의 비용·지연 스트레스와 연도별 성적을 계산하고 시간순 선택 검사를 이어갑니다.</p><div id="continuous-results" class="ideas"></div><p class="foot">사전에 정한 추가 가설 범위입니다. 전체 검사가 끝나면 갱신된 일별 자료로 다음 회차를 시작합니다. 과거 선별 통과는 모의관찰 후보이며, 실전 승인이나 수익 입증을 뜻하지 않습니다.</p></section>
+<section class="panel" id="mandate-paper" hidden><div class="row"><h2>AMD1 · 새 운용 조건 모의거래</h2><span class="pill" id="mandate-paper-status">확인 중</span></div><p id="mandate-paper-summary"></p><p class="work-note">각 후보는 동일한 가상 원금의 대안 계좌로 비교합니다. 한 후보의 BTC·ETH·XRP는 자금·투자 비중·손실 한도를 공유합니다. 후보 계좌들의 성적을 합산 수익으로 계산하지 않습니다.</p><div id="mandate-paper-trials" class="candidate-grid"></div><p class="foot">등록 이후 관찰한 신호로만 가상 주문합니다. 실제 주문·잔고는 사용하지 않습니다. 완료된 최신 1분봉을 받을 때 계좌 손실을 확인하며, 신호·추적 손절은 완료된 전략 봉을 사용합니다. 승률은 청산된 거래만 집계합니다. 호가 수용량과 실제 체결은 별도 검증이 필요합니다.</p></section>
+<section class="panel" id="mandate-research" hidden><div class="row"><h2>초기 운용 조건 연구 · 과거 검사 결과</h2><span class="pill" id="mandate-status">연구 확인 중</span></div><p id="mandate-summary"></p><p>BTC·ETH·XRP가 하나의 자금 한도를 공유합니다. 1시간·4시간봉에서 추세 지속, 되돌림, 변동성 수축 후 돌파를 검사하고 거래량·장세 조건의 효과를 비교합니다.</p><div id="mandate-results"></div><p id="mandate-forward" class="work-note"></p><p class="foot">과거 자료를 고정한 초기 실험입니다. 비용·체결 지연 스트레스와 시간순 선택을 검사했습니다. 호가 수용량과 실제 비용은 추가 확인이 필요하며, 실제 손실 상한을 보장하지 않습니다.</p></section>
 <section class="panel shortlist" id="long-validation" aria-labelledby="long-heading">
 <div class="row"><div><div class="eyebrow">FIVE-YEAR VALIDATION</div><h2 id="long-heading">5년 검증 · 시장 구분 비교</h2></div><span class="pill" id="long-status">장기 검증 확인 중</span></div>
 <p>최근 180일에서 만든 규칙을 고정하고, 이전 기간을 포함한 5년 자료로 다시 검사합니다. <strong>시장 구분 없는 원본과 상승·하락·횡보 필터를 같은 기간·비용으로 비교합니다.</strong></p>
@@ -123,8 +125,33 @@ function renderShortlist(){
  document.getElementById('shortlist-watch-title').textContent=`승률은 높지만 추가 확인이 필요한 후보 · ${watch.length}개 표시`;
  document.getElementById('shortlist-watch').innerHTML=watch.map(candidateCard).join('')||'<p class="muted">표시할 추가 확인 후보가 없습니다.</p>';
 }
-const mandateFamilies={trend:'추세 지속',reversion:'과도한 이탈 후 회복',compression_breakout:'변동성 수축 후 돌파'};
+const mandateFamilies={trend:'추세 지속',reversion:'과도한 이탈 후 회복',compression_breakout:'변동성 수축 후 돌파',trend_pullback:'추세 눌림 후 회복',channel_retest:'돌파 가격 재확인',rsi_recovery:'RSI 회복',range_reversal:'박스권 반등',momentum_acceleration:'모멘텀 전환',volume_expansion:'거래량·변동성 동반 돌파'};
 const mandateFilters={base:'기본형',volume:'거래량 추가',regime:'장세 조건 추가',volume_and_regime:'거래량·장세 추가'};
+function renderContinuous(c,p,healthy){
+ document.getElementById('continuous-research').hidden=!c;
+ if(c){
+  const label=c.state==='error'?'실행 점검 필요':c.state==='auditing'?'시간순 선택 검사 중':c.complete?'회차 완료 · 새 일별 자료 확인 중':'추가 가설 검사 중';
+  document.getElementById('continuous-status').textContent=label;
+  document.getElementById('continuous-summary').textContent=`고정 규칙 ${fmt(c.hypothesis_count)}개 · 검사 ${fmt(c.completed_trials)} / ${fmt(c.total_trials)} · 과거 선별 통과 ${fmt(c.historical_pass_count)}개 · 시간순 검사 ${fmt(c.audit_count)} / 2. 자료 ${c.data_start?.slice(0,10)||'—'} ~ ${c.data_end?.slice(0,10)||'—'}.`;
+  const current=c.current||{};
+  document.getElementById('continuous-current').textContent=`${mandateFamilies[current.family]||label} ${current.rule==='240min'?'4시간':current.rule==='60min'?'1시간':''} · 연구 확인 ${tm(c.checked_at)}`;
+  document.getElementById('continuous-results').innerHTML=(c.candidates||[]).slice(0,6).map(x=>`<article class="idea"><strong>${esc(mandateFamilies[x.family]||'가설')} · ${x.rule==='240min'?'4시간':'1시간'}</strong><p>${esc(mandateFilters[x.filters]||'')} · ${x.state==='historical_screen_pass'?'과거 선별 통과':'현재 기준 미달'}<br>순수익 ${pct(x.normal?.return)} · 비용·지연 스트레스 ${pct(x.stress?.return)} · ${fmt(x.normal?.trades)}거래</p></article>`).join('');
+  if(healthy){document.getElementById('activity').textContent=`A1 ${label} · AMD1 새 조건 모의계좌 ${fmt(p?.trials?.length||0)}개`;
+   document.getElementById('work-current').textContent=label;
+   document.getElementById('work-description').textContent=document.getElementById('continuous-summary').textContent;
+   document.getElementById('work-latest').textContent=document.getElementById('continuous-current').textContent;
+   document.getElementById('work-ideas').textContent='고정 모의계좌는 AMD1에서 계속 관찰하고, A1은 추가 가설·연도별·시간순 검사를 이어갑니다.';}
+  document.getElementById('mandate-status').textContent='초기 검사 완료';
+ }
+ document.getElementById('mandate-paper').hidden=!p;
+ if(p){
+  const trials=p.trials||[],good=p.reachable&&p.state==='running';
+  document.getElementById('mandate-paper-status').textContent=good?`${trials.length}개 모의계좌 관찰 중`:'모의 실행 확인 필요';
+  document.getElementById('mandate-paper-status').className='pill '+(good?'ok':'warn');
+  document.getElementById('mandate-paper-summary').textContent=`AMD1 확인 ${tm(p.checked_at)} · 입력 자료 ${tm(p.feed_at)} · 등록 대기 ${fmt(p.queued||0)}개. 고정 시각과 누적 관찰 기록을 유지합니다.`;
+  document.getElementById('mandate-paper-trials').innerHTML=trials.map(t=>{const n=t.normal||{},s=t.stress||{};return `<article class="candidate"><h3>${esc(mandateFamilies[t.family]||'가설')} · ${t.rule==='240min'?'4시간':'1시간'}</h3><p>${esc(mandateFilters[t.filters]||'')} · ${t.state==='observing'?'새 데이터 관찰':t.state==='awaiting_new_data'?'등록 후 새 봉 대기':'실행 점검 필요'}</p><div class="candidate-code">후보 ${esc(t.id.slice(0,12))}</div><p>고정 ${tm(t.frozen_at,true)}<br>새 봉 ${fmt(t.sessions)}개 · 가격 관찰 ${tm(t.last_quote)}</p><p>총 모의 수익 <strong>${pct(n.return_fraction)}</strong> · 낙폭 ${pct(n.mdd)}<br>청산 ${fmt(n.trades)}회 · 승률 ${pct(n.win_rate)}<br>보유 ${fmt(n.open_positions)}종목 · 가상 주문 대기 ${fmt(n.pending_orders)}개<br>비용 2배·추가 지연 수익 ${pct(s.return_fraction)}</p>${n.paused||s.paused?'<p class="warn">계좌 손실 조건으로 신규 진입 중단</p>':''}</article>`}).join('')||'<p class="muted">통과 후보의 실제 AMD1 등록을 기다리고 있습니다.</p>';
+ }
+}
 function renderMandate(m){
  const panel=document.getElementById('mandate-research');panel.hidden=!m;if(!m)return;
  document.getElementById('mandate-status').textContent=m.state==='error'?'실행 점검 필요':m.complete?'첫 배치 완료 · 다음 검토 대기':`검사 ${fmt(m.completed_trials)} / ${fmt(m.total_trials)}`;
@@ -166,6 +193,7 @@ function render(data){
  renderPaper(r?.validated_paper,'validated-paper');
  document.getElementById('activity').textContent=!a?'A1 상태를 확인하고 있어요.':!fresh(a)?'A1 연결 확인이 필요합니다. 아래 숫자는 마지막 성공한 조회 기록입니다.':!healthy?'A1 연구 서비스가 실행 상태가 아닙니다.':job?`${names[symbol]||symbol||'전략'} ${rule==='60min'?'60분봉':'15분봉'} — 상태 생성 시점에 전략 탐색 작업 실행 중`:'A1 연구 서비스 실행 중 · 회차 사이 대기 없이 새 전략 탐색을 반복합니다.';
  if(r?.mandate_research){document.getElementById('forward').textContent='이전 연구 기록';if(healthy)document.getElementById('activity').textContent=r.mandate_research.state==='error'?'A1 새 연구 실행을 점검해야 합니다.':r.mandate_research.complete?'A1 고정 연구 배치 완료 · 다음 검토일 대기':'A1이 새 운용 조건에 맞춰 가설별 연구를 진행하고 있습니다.';}
+ renderContinuous(r?.continuous_research,r?.mandate_paper,healthy);
  document.getElementById('servers').innerHTML=Object.entries(roles).map(([key,[name,role]])=>{
   const s=servers[key];if(!s)return `<article class="card"><div class="server-name">${name}</div><p>${role}</p><small>조회 중…</small></article>`;
   const good=fresh(s),service=key!=='a1'||s.service?.ActiveState==='active';
