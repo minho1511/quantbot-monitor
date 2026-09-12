@@ -2,6 +2,6 @@
 
 Read-only operational status for a personal research project.
 
-The public files contain status counts and timestamps only. Historical screening passes do not establish future profitability.
+The public dashboard includes operational status, per-server strategy candidates, and owner-requested Upbit assets, entry prices, exit references and receipt-based performance. Credentials, account identifiers and raw broker records are excluded. Historical screening passes do not establish future profitability.
 
-The main branch hosts the page. The status branch contains a small status.json snapshot, updated approximately every ten minutes.
+The main branch hosts the page without login. The status branch contains status.json, updated approximately every five minutes. Each asset snapshot shows its broker query time. Exit references describe the running bot's last calculation, not an exchange stop order.
