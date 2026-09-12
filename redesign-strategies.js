@@ -4,7 +4,7 @@
   style.textContent = `.strategy-fleet{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:18px}.strategy-node{min-width:0;border:1px solid #354c62;border-radius:12px;padding:20px;background:#111c28}.strategy-node h3{font-size:20px;margin:0 0 5px}.strategy-node h4{font-size:15px;margin:0}.strategy-node p{font-size:13px;line-height:1.65}.strategy-counts{display:flex;gap:22px;flex-wrap:wrap;padding:14px 0}.strategy-counts strong{font-size:26px;display:block}.strategy-counts span{font-size:12px;color:#a2b5c9}.installed-strategies{border-top:1px solid #354c62;border-bottom:1px solid #354c62;padding:16px 0;margin-bottom:18px}.strategy-list{display:grid;gap:12px}.strategy-item{background:#162433;border:1px solid #355044;border-radius:9px;padding:16px}.strategy-item.pending{border-color:#675338}.strategy-head{display:flex;justify-content:space-between;align-items:start;gap:10px;flex-wrap:wrap}.strategy-tag{border:1px solid #456153;border-radius:12px;padding:3px 8px;font-size:11px;white-space:nowrap;color:#82dfb5}.strategy-id{font:11px ui-monospace,monospace;color:#9dafc3;overflow-wrap:anywhere}.strategy-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 8px;margin:16px 0}.strategy-stats span{display:block;color:#9dafc3;font-size:11px}.strategy-stats strong{display:block;font-size:20px;font-variant-numeric:tabular-nums}.strategy-wait{color:#f0be75;border-top:1px solid #33465a;padding-top:10px}.strategy-node details{font-size:12px}.strategy-node summary{cursor:pointer;padding:5px 0;color:#b9cbe0}.strategy-node .positive{color:#82dfb5}.strategy-node .negative{color:#ff9c9c}.strategy-note{color:#9dafc3}.strategy-none{color:#adbdd0;padding:8px 0}.strategy-legacy{padding:8px 0}.strategy-legacy strong{font-size:14px}@media(max-width:850px){.strategy-fleet{grid-template-columns:1fr}.strategy-node{padding:16px}.strategy-stats strong{font-size:19px}}`;
   document.head.append(style);
   const family = {breakout:'돌파', pullback:'눌림목', rebound:'반등', utbot:'UT Bot'};
-  const reason = {execution_integration_pending:'실전 실행기 연결 대기',ledger_transition_pending:'기존 잔고·손익 장부 전환 대기',source_clock_calendar_pending:'자료의 봉 시각·거래일 확인 대기',same_window_results_differ:'같은 검증 구간의 결과 차이 확인 필요',combination_validation_pending:'조합 검증 대기',latest_revalidation_not_passed:'최근 재검증 미통과',trade_details_unavailable:'거래 상세 기록 확인 필요'};
+  const reason = {execution_integration_pending:'실전 실행기 연결 대기',execution_adapter_pending:'실제 주문 실행기 미완료',historical_transition_pending:'보유분 포함 전환 백테스트 미완료',candidate_delivery_stale:'후보 수신 갱신 지연',ledger_transition_pending:'기존 잔고·손익 장부 전환 대기',source_clock_calendar_pending:'자료의 봉 시각·거래일 확인 대기',same_window_results_differ:'같은 검증 구간의 결과 차이 확인 필요',combination_validation_pending:'조합 검증 대기',latest_revalidation_not_passed:'최근 재검증 미통과',trade_details_unavailable:'거래 상세 기록 확인 필요'};
   const symbols = {'KRW-BTC':'BTC','KRW-ETH':'ETH','KRW-XRP':'XRP','226490':'KODEX 코스피','252670':'KODEX 곱버스'};
   const el = (tag,text,cls) => {const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;return e;};
   const pct = value => typeof value==='number'&&Number.isFinite(value)?(value>0?'+':'')+(value*100).toFixed(2)+'%':'—';
@@ -22,6 +22,7 @@
       if(!d){card.append(el('p','새 전략 상태 수신 대기','strategy-none'));host.append(card);continue;}
       const runtime=d.runtime||{}, counts=el('div',null,'strategy-counts');
       counts.append(metric('현재 백테스트 통과',d.passed_count+'개'),metric('새 전략 장착 확인',runtime.stale||runtime.new_attached==null?'확인 대기':runtime.new_attached.length+'개'));
+      if(runtime.staging)counts.append(metric('서버 후보 수신',runtime.stale||!runtime.staging.fresh?'갱신 대기':runtime.staging.staged.length+'개'));
       card.append(counts);
       const installed=el('div',null,'installed-strategies');installed.append(el('h4','서버에 장착된 전략'));
       if(runtime.stale)installed.append(el('p','서버 확인이 늦어지고 있습니다. 아래는 마지막 수신 기록입니다.','strategy-wait'));
@@ -32,14 +33,19 @@
         installed.append(item);
       }
       if(!(runtime.legacy||[]).length)installed.append(el('p',runtime.stale?'기존 장착 전략 확인 대기':'기존 실전 전략 없음','strategy-none'));
-      installed.append(el('p',runtime.new_state==='executor_not_connected'?'새 통과 전략: 아직 미장착 · 실행기 연결 대기':'새 전략 장착 상태: 서버 적용 기록 확인 필요','strategy-wait'));
+      if(runtime.staging){
+        const staging=runtime.staging;
+        installed.append(el('p','A1 후보 전달 → '+node+' 수신·확인 → A1 결과 회신: '+(staging.fresh&&!runtime.stale&&staging.feedback_received?'왕복 확인됨':'일부 단계 갱신 확인 필요'),'strategy-note'));
+        installed.append(el('p','새 전략은 후보 수신 단계입니다. 실제 운용·주문은 아직 시작되지 않았습니다.','strategy-wait'));
+        if(staging.proposed?.length)installed.append(el('p','개별·조합 검증이 끝난 준비 구성: '+staging.proposed.map(x=>x.slice(0,10)).join(' · ')+' · 보유분 전환 검증은 별도','strategy-note'));
+      }else installed.append(el('p',runtime.new_state==='executor_not_connected'?'새 통과 전략: 아직 미장착 · 실행기 연결 대기':'새 전략 장착 상태: 서버 적용 기록 확인 필요','strategy-wait'));
       installed.append(el('p','서버 확인 '+at(runtime.observed_at),'strategy-note'));card.append(installed);
       card.append(el('h4','검증 통과 후보'));
       card.append(el('p','같은 전략의 반복 평가를 합쳐 표시합니다. 아래 수익률은 표시된 검증 기간의 백테스트 결과입니다.','strategy-note'));
       const list=el('div',null,'strategy-list');
       for(const c of d.candidates||[]){
         const passed=c.qualification==='passed', item=el('article',null,'strategy-item'+(passed?'':' pending'));item.dataset.strategy=c.id;
-        const head=el('div',null,'strategy-head');head.append(el('h4',strategyName(c)),el('span',passed?'백테스트 통과 · 미장착':'과거 통과 · 재검증 확인','strategy-tag'));item.append(head);
+        const head=el('div',null,'strategy-head');head.append(el('h4',strategyName(c)),el('span',passed?(c.delivered?'통과 · 서버 수신 · 운용 대기':'백테스트 통과 · 미장착'):'과거 통과 · 재검증 확인','strategy-tag'));item.append(head);
         item.append(el('p',markets((c.spec||c).symbols)),el('div','전략 '+c.id.slice(0,10),'strategy-id'));
         const m=c.metrics||{}, stats=el('div',null,'strategy-stats');
         stats.append(metric('비용 차감 수익',pct(m.net_return),m.net_return>0?'positive':'negative'),metric('비용 2배 수익',pct(m.stress_return),m.stress_return>0?'positive':'negative'),metric('최대 낙폭',pct(m.max_drawdown)),metric('완료 거래',(m.completed_trades??'—')+'회'),metric('승률',typeof m.win_rate==='number'?(m.win_rate*100).toFixed(1)+'%':'—'),metric('조합 검증',c.combination_passed?'통과':'대기'));item.append(stats);
