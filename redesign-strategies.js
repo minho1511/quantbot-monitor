@@ -59,6 +59,10 @@
     for(const node of ['AMD1','AMD2']){
       const d=nodes?.[node], card=el('article',null,'strategy-node');card.dataset.node=node;
       card.append(el('h3',node+' · '+(node==='AMD1'?'업비트':'나무증권')));
+      if(node==='AMD2'){
+        const hours=el('p','거래시간 안내 · 현재 두 ETF는 2026-09-14부터 시작하는 KRX 16~20시 애프터마켓 대상에서 제외됩니다. ','strategy-note');
+        const source=el('a','공식 안내');source.href='https://www.samsungpop.com/ux/kor/customer/notice/notice/noticeViewContent.do?MenuSeqNo=24420';source.target='_blank';source.rel='noopener noreferrer';hours.append(source);card.append(hours);
+      }
       card.append(controls(node,d?.runtime));
       if(!d){card.append(el('p','새 전략 상태 수신 대기','strategy-none'));host.append(card);continue;}
       const runtime=d.runtime||{}, attached=attachment(runtime), counts=el('div',null,'strategy-counts');
