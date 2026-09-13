@@ -27,6 +27,7 @@
   };
   function metric(label,value,cls){const item=el('div');item.append(el('span',label),el('strong',value,cls));return item;}
   function strategyName(c){const s=c.spec||c;return (s.timeframe===1440?'일봉':s.timeframe+'분봉')+' '+(family[s.family]||'전략')+(s.volume?' · 거래량':'');}
+  function exitLabel(c){const p=(c.spec||c).trailing_pct;return typeof p==='number'&&p>0&&p<1?'고점에서 '+(p*100).toFixed(1)+'% 하락 시 청산 · 고정 익절 없음':null;}
   function controls(node,runtime){
     const box=el('section',null,'strategy-control'),c=runtime?.control;
     const fresh=freshAt(c?.observed_at);
@@ -74,12 +75,19 @@
         card.append(el('p','A1 동적 전략 연구 · EMA·ATR 추적 / 켈트너 / 슈퍼트렌드 / 되돌림','strategy-note'));
         card.append(el('p',a.fresh?'평가 작업 완료 '+(j.complete||0)+'건 · 실행 중 '+(j.running||0)+'건 · 대기 '+(j.queued||0)+'건'+(j.quarantined?' · 오류 확인 '+j.quarantined+'건':''):'새 연구 상태 갱신 확인 필요',a.fresh?'strategy-note':'strategy-wait'));
       }
-      if(d.etf_execution){
-        const a=d.etf_execution,j=a.jobs||{},plan=a.search_plan||{};
+      for(const field of ['etf_execution','etf_trailing']){
+        const a=d[field];if(!a)continue;
+        const j=a.jobs||{},plan=a.search_plan||{};
         const names=(plan.families||[]).map(f=>family[f]).filter(Boolean);
-        card.append(el('p','A1 ETF 연구'+(names.length?' · '+names.join(' / '):'')+' · 거래량 조건도 비교','strategy-note'));
+        card.append(el('p',(field==='etf_trailing'?'A1 ETF 고점 4% 추적 연구 · 고정 익절 없음':'A1 ETF 연구')+(names.length?' · '+names.join(' / '):'')+' · 거래량 조건도 비교','strategy-note'));
         card.append(el('p','앞 3개월로 연구 → 뒤 1개월 검증 · 나무 분봉, 수수료·세금·주문 지연 반영','strategy-note'));
         card.append(el('p',a.fresh?'평가 작업 완료 '+(j.complete||0)+'건 · 실행 중 '+(j.running||0)+'건 · 대기 '+(j.queued||0)+'건'+(j.quarantined?' · 오류 확인 '+j.quarantined+'건':''):'ETF 연구 상태 갱신 확인 필요',a.fresh?'strategy-note':'strategy-wait'));
+        if(a.fresh&&a.validation){
+          const v=a.validation,labels={normal_net_return:'일반 비용 후 수익 부족',stress_net_return:'비용 2배에서 수익 부족',normal_drawdown:'낙폭 초과',completed_trades:'완료 거래 부족',intrabar_qualification_changes:'분봉 내 가격 순서에 따라 통과 여부 변동'};
+          card.append(el('p','개별 후보 검증 '+(v.evaluated||0)+'건 · 통과 판정 '+(v.passed||0)+'건 · 반복 평가는 같은 전략일 수 있습니다.','strategy-note'));
+          const failures=Object.entries(v.reasons||{}).filter(([k,n])=>labels[k]&&n>0).map(([k,n])=>labels[k]+' '+n+'건');
+          if(failures.length)card.append(el('p','미통과 사유 · '+failures.join(' / ')+' · 사유 중복 포함','strategy-note'));
+        }
         if(a.fresh&&plan.state){
           const state={ready:'다음 연구 준비',researching:'추가 전략 검증 중',daily_plan_complete:'오늘 예정한 검증 완료 · 다음 평가 구간 대기',data_wait:'연구 자료 확인 필요'}[plan.state];
           if(state)card.append(el('p',state+(Number.isInteger(plan.round_limit)?' · 연구 묶음 등록 '+plan.registered_rounds+' / '+plan.round_limit:''),plan.state==='data_wait'?'strategy-wait':'strategy-note'));
@@ -105,7 +113,7 @@
         item.dataset.attachedStrategy=id;
         item.append(el('strong',(candidate?strategyName(candidate):'새 전략')+' · '+(attached?attachedLabel(runtime):'장착 상태 갱신 확인 필요')),
           el('div','전략 '+id.slice(0,10),'strategy-id'));
-        if(candidate)item.append(el('p',markets((candidate.spec||candidate).symbols)));
+        if(candidate){item.append(el('p',markets((candidate.spec||candidate).symbols)));if(exitLabel(candidate))item.append(el('p',exitLabel(candidate)));}
         installed.append(item);
       }
       if(runtime.attachment_observed_at)installed.append(el('p','장착 확인 '+at(runtime.attachment_observed_at)+(attached==null?' · 마지막 수신 기록':''),'strategy-note'));
@@ -124,13 +132,14 @@
         const head=el('div',null,'strategy-head');head.append(el('h4',strategyName(c)),el('span',applied?attachedLabel(runtime):passed?(c.delivered?'통과 · 서버 수신 · 운용 대기':'백테스트 통과 · 미장착'):'과거 통과 · 재검증 확인','strategy-tag'));item.append(head);
         if(applied&&!passed)item.append(el('p','과거 통과 · 재검증 확인','strategy-wait'));
         item.append(el('p',markets((c.spec||c).symbols)),el('div','전략 '+c.id.slice(0,10),'strategy-id'));
+        if(exitLabel(c))item.append(el('p',exitLabel(c)));
         const m=c.metrics||{}, stats=el('div',null,'strategy-stats');
         stats.append(metric('비용 차감 수익',pct(m.net_return),m.net_return>0?'positive':'negative'),metric('비용 2배 수익',pct(m.stress_return),m.stress_return>0?'positive':'negative'),metric('최대 낙폭',pct(m.max_drawdown)),metric('완료 거래',(m.completed_trades??'—')+'회'),metric('승률',typeof m.win_rate==='number'?(m.win_rate*100).toFixed(1)+'%':'—'),metric('조합 검증',c.combination_passed?'통과':'대기'));item.append(stats);
         item.append(el('p','검증 '+(c.window?.validation_start||'').slice(0,10)+' ~ '+(c.window?.end||'').slice(0,10)+' 미만','strategy-note'));
         const pending=new Set(['execution_integration_pending','execution_adapter_pending','ledger_transition_pending','historical_transition_pending']);
         const waiting=(c.wait_reasons||[]).filter(code=>!applied||!pending.has(code));
         if(waiting.length)item.append(el('p',waiting.map(x=>reason[x]||x).join(' · '),'strategy-wait'));
-        if(c.spec){const s=c.spec, details=el('details');details.dataset.key=node+':'+c.id;details.open=opened.has(details.dataset.key);details.append(el('summary','고정된 전략 설정 보기'),el('p','최대 보유 '+s.hold_days+'일 · 매수 상한 '+pct(s.premium)+' · 기준 '+s.window+'봉 · ATR '+s.atr_period+'봉'),el('p','손절 ATR '+s.stop_atr+'배 · 목표 손익비 '+s.take_rr+(s.volume?' · 거래량 '+s.volume_ratio+'배 조건':' · 별도 거래량 조건 없음')),el('p','최종 평가 전에 고정한 설정입니다. 완결 평가 기록 '+c.completed_evaluation_records+'건을 새 독립 검증 횟수로 세지 않습니다.','strategy-note'));item.append(details);}
+        if(c.spec){const s=c.spec, details=el('details');details.dataset.key=node+':'+c.id;details.open=opened.has(details.dataset.key);details.append(el('summary','고정된 전략 설정 보기'),el('p','최대 보유 '+s.hold_days+'일 · 매수 상한 '+pct(s.premium)+' · 기준 '+s.window+'봉 · ATR '+s.atr_period+'봉'),el('p',(exitLabel(c)||'손절 ATR '+s.stop_atr+'배 · 목표 손익비 '+s.take_rr)+(s.volume?' · 거래량 '+s.volume_ratio+'배 조건':' · 별도 거래량 조건 없음')),el('p','최종 평가 전에 고정한 설정입니다. 완결 평가 기록 '+c.completed_evaluation_records+'건을 새 독립 검증 횟수로 세지 않습니다.','strategy-note'));item.append(details);}
         list.append(item);
       }
       if(!list.children.length)list.append(el('p','아직 백테스트 통과 후보가 없습니다.','strategy-none'));
