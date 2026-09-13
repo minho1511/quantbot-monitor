@@ -27,7 +27,7 @@
   };
   function metric(label,value,cls){const item=el('div');item.append(el('span',label),el('strong',value,cls));return item;}
   function strategyName(c){const s=c.spec||c;return (s.timeframe===1440?'일봉':s.timeframe+'분봉')+' '+(family[s.family]||'전략')+(s.volume?' · 거래량':'');}
-  function exitLabel(c){const p=(c.spec||c).trailing_pct;return typeof p==='number'&&p>0&&p<1?'고점에서 '+(p*100).toFixed(1)+'% 하락 시 청산 · 고정 익절 없음':null;}
+  function exitLabel(c){const s=c.spec||c,p=s.trailing_pct,a=s.exit_mode==='atr_trailing'?s.stop_atr:s.trailing_atr;if(typeof a==='number'&&a>0&&a<=10)return 'ATR '+a+'배 고점 추적 · 고정 익절 없음';return typeof p==='number'&&p>0&&p<1?'고점에서 '+(p*100).toFixed(1)+'% 하락 시 청산 · 고정 익절 없음':null;}
   function controls(node,runtime){
     const box=el('section',null,'strategy-control'),c=runtime?.control;
     const fresh=freshAt(c?.observed_at);
@@ -79,7 +79,7 @@
         const a=d[field];if(!a)continue;
         const j=a.jobs||{},plan=a.search_plan||{};
         const names=(plan.families||[]).map(f=>family[f]).filter(Boolean);
-        card.append(el('p',(field==='etf_trailing'?'A1 ETF 고점 4% 추적 연구 · 고정 익절 없음':'A1 ETF 연구')+(names.length?' · '+names.join(' / '):'')+' · 거래량 조건도 비교','strategy-note'));
+        card.append(el('p',(field==='etf_trailing'?'A1 ETF 청산 방식 비교 · ATR·여러 추적 비율 · 고정 익절 없음':'A1 ETF 연구')+(names.length?' · '+names.join(' / '):'')+' · 거래량 조건도 비교','strategy-note'));
         card.append(el('p','앞 3개월로 연구 → 뒤 1개월 검증 · 나무 분봉, 수수료·세금·주문 지연 반영','strategy-note'));
         card.append(el('p',a.fresh?'평가 작업 완료 '+(j.complete||0)+'건 · 실행 중 '+(j.running||0)+'건 · 대기 '+(j.queued||0)+'건'+(j.quarantined?' · 오류 확인 '+j.quarantined+'건':''):'ETF 연구 상태 갱신 확인 필요',a.fresh?'strategy-note':'strategy-wait'));
         if(a.fresh&&a.validation){
