@@ -70,6 +70,15 @@
       counts.append(metric('현재 백테스트 통과',d.passed_count+'개'),metric('새 전략 장착 확인',attached==null?'확인 대기':attached.length+'개'));
       if(runtime.staging)counts.append(metric('서버 후보 수신',runtime.stale||!runtime.staging.fresh?'갱신 대기':runtime.staging.staged.length+'개'));
       card.append(counts);
+      if(d.execution_feedback){
+        const f=d.execution_feedback,j=f.jobs||{},fresh=f.fresh&&freshAt(f.observed_at);
+        card.append(el('p','실전 결과 → A1 후속 연구 · '+(fresh?'연결됨':'갱신 확인 필요'),fresh?'strategy-note':'strategy-wait'));
+        if(fresh){
+          card.append(el('p','체결 주문 '+(f.filled_orders||0)+'건 · 비용 확정 완료 거래 '+(f.completed_trades||0)+'건 · 비용 확인 중 '+(f.pending_cost_orders||0)+'건','strategy-note'));
+          card.append(el('p','실전 전략·주변 설정 재검증: 완료 '+(j.complete||0)+' / 실행 '+(j.running||0)+' / 대기 '+(j.queued||0)+(j.quarantined?' · 오류 '+j.quarantined:''),'strategy-note'));
+          if(!f.completed_trades)card.append(el('p','아직 청산 손익이 없어 운용 중인 규칙부터 재검증합니다. 수익성이 입증됐다는 뜻은 아닙니다.','strategy-note'));
+        }
+      }
       if(d.adaptive){
         const a=d.adaptive,j=a.jobs||{};
         card.append(el('p','A1 동적 전략 연구 · EMA·ATR 추적 / 켈트너 / 슈퍼트렌드 / 되돌림','strategy-note'));
