@@ -34,6 +34,7 @@
       for(const s of runtime.legacy||[]){
         const item=el('div',null,'strategy-legacy');
         item.append(el('strong',s.name+' · '+(s.mode==='live'?'실전 설정':'주문 없는 실행 설정')+(s.halted?' · 중단 상태':'')),el('p',markets(s.symbols)+' · '+s.schedule),el('p','마지막 실행 '+at(s.last_run),'strategy-note'));
+        item.append(el('p',s.allow_new_buys===false?'신규매수 차단 · 기존 보유 관리':s.allow_new_buys===true?'신규매수 허용 설정':'신규매수 설정 확인 대기',s.allow_new_buys===false?'strategy-wait':'strategy-note'));
         if(s.account_drawdown!=null)item.append(el('p','기존 손실한도 '+pct(-s.account_drawdown)+' · 새 체계 전환 전','strategy-wait'));
         installed.append(item);
       }
