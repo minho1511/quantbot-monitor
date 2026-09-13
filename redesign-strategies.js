@@ -5,6 +5,7 @@
   document.head.append(style);
   const controlStyle=document.createElement('style');
   controlStyle.textContent='.strategy-control{padding:16px;margin:16px 0;border:1px solid #456078;border-radius:10px;background:#182838}.strategy-control-actions{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}.strategy-control-actions a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 20px;border-radius:8px;text-decoration:none;font-weight:700;color:#0a2018;background:#82dfb5}.strategy-control-actions a.stop{color:#ffd0ce;background:#422d35;border:1px solid #92585d}.strategy-control-actions a:focus-visible{outline:3px solid #fff;outline-offset:3px}.strategy-control ul{padding-left:20px;font-size:13px;line-height:1.7}';
+  controlStyle.textContent+='.strategy-control-command{-webkit-user-select:all;user-select:all;overflow-wrap:anywhere}';
   document.head.append(controlStyle);
   const family = {breakout:'돌파', pullback:'눌림목', rebound:'반등', utbot:'UT Bot',chandelier:'EMA 회복·ATR 추적',keltner:'켈트너 돌파',supertrend:'슈퍼트렌드 전환',keltner_reentry:'켈트너 되돌림'};
   const reason = {execution_integration_pending:'실전 실행기 연결 대기',execution_adapter_pending:'실제 주문 실행기 미완료',historical_transition_pending:'보유분 포함 전환 백테스트 미완료',candidate_delivery_stale:'후보 수신 갱신 지연',ledger_transition_pending:'기존 잔고·손익 장부 전환 대기',source_clock_calendar_pending:'자료의 봉 시각·거래일 확인 대기',same_window_results_differ:'같은 검증 구간의 결과 차이 확인 필요',combination_validation_pending:'조합 검증 대기',latest_revalidation_not_passed:'최근 재검증 미통과',trade_details_unavailable:'거래 상세 기록 확인 필요'};
@@ -32,11 +33,16 @@
     const modes={observer:attachment(runtime)?.length?'장착 · 시작 대기':'대기 · 새 전략 거래 전',active:'새 전략 운용 중',exit_only:'신규 진입 중지 · 보유분 관리'};
     box.append(el('h4',fresh?(modes[c.mode]||'실행 상태 확인 필요'):'실행 상태 갱신 확인 필요'));
     const actions=el('div',null,'strategy-control-actions');
-    for(const [action,label] of [['start','Start · 시작'],['stop','Stop · 신규 진입 중지']]){
+    for(const [action,label] of [['start','Start · 텔레그램 확인'],['stop','Stop · 신규 진입 중지']]){
       const link=el('a',label,action);link.href='https://t.me/Oracleinvest_bot?start='+action+'_'+node;
       link.target='_blank';link.rel='noopener noreferrer';link.title=node+' '+label+' · 텔레그램에서 확인';actions.append(link);
     }
     box.append(actions,el('p','버튼 → 내 텔레그램에서 준비 검사 → 시작 확인. 이 화면은 조회용이며, 버튼을 눌렀다는 이유만으로 운용 중으로 표시하지 않습니다.','strategy-note'));
+    box.append(el('p','텔레그램이 열려도 응답이 없으면 Oracleinvest_bot 대화방에 아래 명령을 복사해 보내세요.','strategy-note'));
+    for(const [action,label] of [['start','시작: '],['stop','신규 진입 중지: ']]){
+      const line=el('p');line.append(el('span',label),el('code','/start '+action+'_'+node,'strategy-control-command'));box.append(line);
+    }
+    box.append(el('p','준비가 안 된 경우 텔레그램으로 시작이 완료되지 않은 이유를 안내합니다.','strategy-note'));
     if(fresh){
       box.append(el('p',c.ready===true?'마지막 준비 검사 통과 · 시작할 때 다시 확인합니다.':'시작 준비 중 · 아래 항목을 먼저 완료해야 합니다.',c.ready===true?'positive':'strategy-wait'));
       const reasons={approval_not_ready:'검증된 전략의 실행 승인',ledger_not_ready:'기존 잔고·손익 장부 이전',reconciliation_not_ready:'실제 계좌와 전략별 보유량 대사',risk_not_ready:'손실 한도와 운용 가능 잔고 확인',costs_not_ready:'수수료·거래 비용 확인',source_not_ready:'실행에 필요한 시장 데이터 확인',single_writer_not_ready:'기존 UT Bot과 새 실행기의 주문 충돌 방지'};
