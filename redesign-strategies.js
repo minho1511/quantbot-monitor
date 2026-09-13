@@ -3,7 +3,7 @@
   const style = document.createElement('style');
   style.textContent = `.strategy-fleet{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:18px}.strategy-node{min-width:0;border:1px solid #354c62;border-radius:12px;padding:20px;background:#111c28}.strategy-node h3{font-size:20px;margin:0 0 5px}.strategy-node h4{font-size:15px;margin:0}.strategy-node p{font-size:13px;line-height:1.65}.strategy-counts{display:flex;gap:22px;flex-wrap:wrap;padding:14px 0}.strategy-counts strong{font-size:26px;display:block}.strategy-counts span{font-size:12px;color:#a2b5c9}.installed-strategies{border-top:1px solid #354c62;border-bottom:1px solid #354c62;padding:16px 0;margin-bottom:18px}.strategy-list{display:grid;gap:12px}.strategy-item{background:#162433;border:1px solid #355044;border-radius:9px;padding:16px}.strategy-item.pending{border-color:#675338}.strategy-head{display:flex;justify-content:space-between;align-items:start;gap:10px;flex-wrap:wrap}.strategy-tag{border:1px solid #456153;border-radius:12px;padding:3px 8px;font-size:11px;white-space:nowrap;color:#82dfb5}.strategy-id{font:11px ui-monospace,monospace;color:#9dafc3;overflow-wrap:anywhere}.strategy-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 8px;margin:16px 0}.strategy-stats span{display:block;color:#9dafc3;font-size:11px}.strategy-stats strong{display:block;font-size:20px;font-variant-numeric:tabular-nums}.strategy-wait{color:#f0be75;border-top:1px solid #33465a;padding-top:10px}.strategy-node details{font-size:12px}.strategy-node summary{cursor:pointer;padding:5px 0;color:#b9cbe0}.strategy-node .positive{color:#82dfb5}.strategy-node .negative{color:#ff9c9c}.strategy-note{color:#9dafc3}.strategy-none{color:#adbdd0;padding:8px 0}.strategy-legacy{padding:8px 0}.strategy-legacy strong{font-size:14px}@media(max-width:850px){.strategy-fleet{grid-template-columns:1fr}.strategy-node{padding:16px}.strategy-stats strong{font-size:19px}}`;
   document.head.append(style);
-  const family = {breakout:'돌파', pullback:'눌림목', rebound:'반등', utbot:'UT Bot'};
+  const family = {breakout:'돌파', pullback:'눌림목', rebound:'반등', utbot:'UT Bot',chandelier:'EMA 회복·ATR 추적',keltner:'켈트너 돌파',supertrend:'슈퍼트렌드 전환',keltner_reentry:'켈트너 되돌림'};
   const reason = {execution_integration_pending:'실전 실행기 연결 대기',execution_adapter_pending:'실제 주문 실행기 미완료',historical_transition_pending:'보유분 포함 전환 백테스트 미완료',candidate_delivery_stale:'후보 수신 갱신 지연',ledger_transition_pending:'기존 잔고·손익 장부 전환 대기',source_clock_calendar_pending:'자료의 봉 시각·거래일 확인 대기',same_window_results_differ:'같은 검증 구간의 결과 차이 확인 필요',combination_validation_pending:'조합 검증 대기',latest_revalidation_not_passed:'최근 재검증 미통과',trade_details_unavailable:'거래 상세 기록 확인 필요'};
   const symbols = {'KRW-BTC':'BTC','KRW-ETH':'ETH','KRW-XRP':'XRP','226490':'KODEX 코스피','252670':'KODEX 곱버스'};
   const el = (tag,text,cls) => {const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;return e;};
@@ -24,6 +24,11 @@
       counts.append(metric('현재 백테스트 통과',d.passed_count+'개'),metric('새 전략 장착 확인',runtime.stale||runtime.new_attached==null?'확인 대기':runtime.new_attached.length+'개'));
       if(runtime.staging)counts.append(metric('서버 후보 수신',runtime.stale||!runtime.staging.fresh?'갱신 대기':runtime.staging.staged.length+'개'));
       card.append(counts);
+      if(d.adaptive){
+        const a=d.adaptive,j=a.jobs||{};
+        card.append(el('p','A1 동적 전략 연구 · EMA·ATR 추적 / 켈트너 / 슈퍼트렌드 / 되돌림','strategy-note'));
+        card.append(el('p',a.fresh?'평가 작업 완료 '+(j.complete||0)+'건 · 실행 중 '+(j.running||0)+'건 · 대기 '+(j.queued||0)+'건'+(j.quarantined?' · 오류 확인 '+j.quarantined+'건':''):'새 연구 상태 갱신 확인 필요',a.fresh?'strategy-note':'strategy-wait'));
+      }
       const installed=el('div',null,'installed-strategies');installed.append(el('h4','서버에 장착된 전략'));
       if(runtime.stale)installed.append(el('p','서버 확인이 늦어지고 있습니다. 아래는 마지막 수신 기록입니다.','strategy-wait'));
       for(const s of runtime.legacy||[]){
