@@ -74,6 +74,16 @@
         card.append(el('p','A1 동적 전략 연구 · EMA·ATR 추적 / 켈트너 / 슈퍼트렌드 / 되돌림','strategy-note'));
         card.append(el('p',a.fresh?'평가 작업 완료 '+(j.complete||0)+'건 · 실행 중 '+(j.running||0)+'건 · 대기 '+(j.queued||0)+'건'+(j.quarantined?' · 오류 확인 '+j.quarantined+'건':''):'새 연구 상태 갱신 확인 필요',a.fresh?'strategy-note':'strategy-wait'));
       }
+      if(d.etf_execution){
+        const a=d.etf_execution,j=a.jobs||{};
+        card.append(el('p','A1 ETF 연구 · ATR 추적 / 켈트너 되돌림 / 돌파 · 거래량 조건도 비교','strategy-note'));
+        card.append(el('p','앞 3개월로 연구 → 뒤 1개월 검증 · 나무 분봉, 수수료·세금·주문 지연 반영','strategy-note'));
+        card.append(el('p',a.fresh?'평가 작업 완료 '+(j.complete||0)+'건 · 실행 중 '+(j.running||0)+'건 · 대기 '+(j.queued||0)+'건'+(j.quarantined?' · 오류 확인 '+j.quarantined+'건':''):'ETF 연구 상태 갱신 확인 필요',a.fresh?'strategy-note':'strategy-wait'));
+        card.append(el('p','주문 시간 · KRX 거래일 09:00~15:20 연속매매 구간 · 장외에는 주문 대기','strategy-note'));
+        const c=runtime.control;
+        if(c&&freshAt(c.observed_at)&&['ledger','reconciliation','costs','single_writer'].every(k=>c.checks?.[k]===true)&&d.passed_count===0)
+          card.append(el('p','계좌·거래 연결 확인 완료 · 새 검증 기준을 통과할 전략 연구 중','strategy-wait'));
+      }
       const installed=el('div',null,'installed-strategies');installed.append(el('h4','서버에 장착된 전략'));
       if(runtime.legacy_retired_at)installed.append(el('p','기존 UT Bot 자동 실행 종료 · '+at(runtime.legacy_retired_at)+' · 보유분 매도 여부는 계좌 체결로 확인합니다.','strategy-wait'));
       if(runtime.stale)installed.append(el('p','기존 실행 설정 확인이 늦어지고 있습니다. 아래 기존 전략은 마지막 수신 기록입니다.','strategy-wait'));
