@@ -13,7 +13,7 @@
   const save=el('a','금액 저장 · 텔레그램');save.target='_blank';save.rel='noopener noreferrer';
   const row=el('div',null,'capital-budget-row');row.append(input,el('span','원'),save);
   const error=el('p',null,'budget-error');error.id='capital-budget-error';error.setAttribute('aria-live','polite');
-  const help=el('p','봇에 배정할 원화 금액을 입력하고 본인 텔레그램으로 저장해 주세요. 현재 이 한도는 토스 주문에 아직 적용되지 않습니다. 저장만으로 기존 보유 종목이나 자금이 이동하지 않습니다.');help.id='capital-budget-help';
+  const help=el('p','봇에 배정할 원화 금액을 본인 텔레그램으로 저장해 주세요. 봇은 한도와 실제 원화 주문 가능 현금 내에서 운용합니다. 개인 보유 종목은 편입하지 않습니다. 한도를 줄이면 신규 매수를 제한하고, 봇 보유분은 기존 청산 규칙을 따릅니다.');help.id='capital-budget-help';
   const state=el('p','저장 상태 확인 중','budget-status');state.setAttribute('aria-live','polite');
   const command=el('code');const fallback=el('p','텔레그램이 열려도 응답이 없으면 아래 명령을 직접 보내세요. ');fallback.append(command);fallback.hidden=true;
   box.append(label,row,error,help,state,fallback);
@@ -38,12 +38,12 @@
   validate();
   window.renderCapitalBudget = value => {
     const valid=value&&value.currency==='KRW'&&value.broker==='toss'&&Number.isSafeInteger(value.amount)&&value.amount>=0&&value.amount<=999999999999;
-    if(!valid){state.textContent=value?.error?'한도 저장 상태를 확인하지 못했습니다. 다음 갱신을 기다려 주세요.':value?.state==='not_configured'?'아직 저장된 운용 한도가 없습니다. 토스 주문 연결 준비 중입니다.':'한도 저장 상태 수신 대기 · 토스 주문 연결 준비 중';return;}
+    if(!valid){state.textContent=value?.error?'운용 한도 상태를 확인하지 못했습니다. 다음 갱신을 기다려 주세요.':value?.state==='not_configured'?'운용 한도 미설정 · 금액을 저장하면 실제 주문 가능 현금 내에서 배정합니다.':'운용 한도 상태 수신 대기';return;}
     if(!dirty&&document.activeElement!==input){input.value=String(value.amount);validate();}
-    const names={delivery_pending:'AMD2 전달 대기',delivery_expired:'요청 유효시간 만료 · AMD2 저장 확인 필요',saved_pending_toss_connection:'AMD2 저장 확인 · 토스 주문 연결 대기'};
+    const names={delivery_pending:'AMD2 전달 대기',delivery_expired:'요청 유효시간 만료 · AMD2 저장 확인 필요',saved_pending_toss_connection:'AMD2 저장 확인 · 적용 상태 갱신 대기',budget_update_pending:'새 한도 적용 대기',applied:'주문 한도 적용',reduction_pending:'신규 매수 제한 · 기존 보유·미결 주문 정리 후 배정 축소',cash_limited:'실제 주문 가능 현금 범위에서 배정'};
     const ago=(Date.now()-Date.parse(value.observed_at))/1000;
-    const stale=value.state==='saved_pending_toss_connection'&&!(Number.isFinite(ago)&&ago>-180&&ago<900);
+    const stale=!['delivery_pending','delivery_expired'].includes(value.state)&&!(Number.isFinite(ago)&&ago>-180&&ago<900);
     const expired=value.state==='delivery_pending'&&Date.now()-Date.parse(value.requested_at)>=900000;
-    state.textContent='요청 한도 '+value.amount.toLocaleString('ko-KR')+'원 · '+(stale?'서버 수신 상태 갱신 대기':expired?names.delivery_expired:names[value.state]||'적용 상태 확인 중')+(value.error?' · 새 요청 수신 확인 필요':'');
+    state.textContent='요청 한도 '+value.amount.toLocaleString('ko-KR')+'원 · '+(stale?'서버 상태 갱신 대기':expired?names.delivery_expired:names[value.state]||'적용 상태 확인 중')+(!stale&&Number.isSafeInteger(value.allocated)?' · 배정 원금 '+value.allocated.toLocaleString('ko-KR')+'원':'')+(value.error?' · 새 요청 수신 확인 필요':'');
   };
 })();
