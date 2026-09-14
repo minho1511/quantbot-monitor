@@ -67,6 +67,8 @@
       card.append(controls(node,d?.runtime));
       if(!d){card.append(el('p','새 전략 상태 수신 대기','strategy-none'));host.append(card);continue;}
       const runtime=d.runtime||{}, attached=attachment(runtime), counts=el('div',null,'strategy-counts');
+      const tossConnected=runtime.broker==='toss'&&['active','exit_only'].includes(runtime.control?.mode)&&freshAt(runtime.control?.observed_at)&&['ledger','reconciliation','costs','single_writer'].every(k=>runtime.control.checks?.[k]===true);
+      if(tossConnected)card.append(el('p','토스 매매 연결 확인 · 검증·시장 조건에 따라 자동 운용','strategy-note'));
       counts.append(metric('현재 백테스트 통과',d.passed_count+'개'),metric('새 전략 장착 확인',attached==null?'확인 대기':attached.length+'개'));
       if(runtime.staging)counts.append(metric('서버 후보 수신',runtime.stale||!runtime.staging.fresh?'갱신 대기':runtime.staging.staged.length+'개'));
       card.append(counts);
@@ -146,7 +148,7 @@
         stats.append(metric('비용 차감 수익',pct(m.net_return),m.net_return>0?'positive':'negative'),metric('비용 2배 수익',pct(m.stress_return),m.stress_return>0?'positive':'negative'),metric('최대 낙폭',pct(m.max_drawdown)),metric('완료 거래',(m.completed_trades??'—')+'회'),metric('승률',typeof m.win_rate==='number'?(m.win_rate*100).toFixed(1)+'%':'—'),metric('조합 검증',c.combination_passed?'통과':'대기'));item.append(stats);
         item.append(el('p','검증 '+(c.window?.validation_start||'').slice(0,10)+' ~ '+(c.window?.end||'').slice(0,10)+' 미만','strategy-note'));
         const pending=new Set(['execution_integration_pending','execution_adapter_pending','ledger_transition_pending','historical_transition_pending']);
-        const waiting=(c.wait_reasons||[]).filter(code=>!applied||!pending.has(code));
+        const waiting=(c.wait_reasons||[]).filter(code=>(!applied||!pending.has(code))&&!(tossConnected&&['execution_adapter_pending','execution_integration_pending','ledger_transition_pending'].includes(code)));
         if(waiting.length)item.append(el('p',waiting.map(x=>reason[x]||x).join(' · '),'strategy-wait'));
         if(c.spec){const s=c.spec, details=el('details');details.dataset.key=node+':'+c.id;details.open=opened.has(details.dataset.key);details.append(el('summary','고정된 전략 설정 보기'),el('p','최대 보유 '+s.hold_days+'일 · 매수 상한 '+pct(s.premium)+' · 기준 '+s.window+'봉 · ATR '+s.atr_period+'봉'),el('p',(exitLabel(c)||'손절 ATR '+s.stop_atr+'배 · 목표 손익비 '+s.take_rr)+(s.volume?' · 거래량 '+s.volume_ratio+'배 조건':' · 별도 거래량 조건 없음')),el('p','최종 평가 전에 고정한 설정입니다. 완결 평가 기록 '+c.completed_evaluation_records+'건을 새 독립 검증 횟수로 세지 않습니다.','strategy-note'));item.append(details);}
         list.append(item);
