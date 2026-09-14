@@ -280,6 +280,9 @@ function serverWork(key,s,r){
  const d=r?.etf_discovery,p=r?.etf_discovery_paper;
  const recent=v=>{const t=date(v);return t&&Number.isFinite(t.getTime())&&Date.now()-t.getTime()<900000;};
  if(key==='a1'){
+  if(s.research_runtime){const runtime=s.research_runtime;
+   return `<div class="server-work"><strong>LightGBM 예측 · Ridge 비교</strong><p>${(runtime.jobs||[]).map(j=>`${esc(predictionJobNames[j.id]||'연구')}: ${esc(fresh(s)?predictionStateLabel(j.state):'갱신 확인 필요')}<br><small>최근 완료 ${tm(j.last_completed_at,true)}</small>`).join('<br>')}</p></div>`;
+  }
   const phase={evaluating:'새 ETF 규칙 검사 중',awaiting_next_generation:'이번 묶음 검사 완료 · 다음 생성 회차 대기',grammar_exhausted:'구조 조합 탐색 완료 · 새 구성요소 필요'};
   return `<div class="server-work"><strong>${!fresh(s)||!recent(d?.updated_at)?'연구 상태 갱신 확인 필요':esc(phase[d?.state]||'새 규칙 상태 확인 필요')}</strong><p>마지막 연구 기록 ${tm(d?.updated_at,true)}<br>검사 ${d?.evaluated_total==null?'—':fmt(d.evaluated_total)}개 · 과거 통과 ${d?.approved_total==null?'—':fmt(d.approved_total)}개</p><small>진입·시장 조건·거래량·청산 규칙을 조합해 검증</small></div>`;
  }
@@ -289,6 +292,18 @@ function serverWork(key,s,r){
   return `<div class="server-work"><strong>${!fresh(s)||!recent(p?.updated_at)?'모의 상태 갱신 확인 필요':esc(states[p?.state]||'모의 상태 확인 필요')}</strong><p>모의 등록 ${p?.candidates==null?'—':fmt(p.candidates)}개 · 청산 기록 있는 후보 ${p?fmt(traded):'—'}개<br>마지막 실행 ${tm(p?.updated_at,true)}</p><small>관찰 시작 ${tm(p?.forward_start,true)} · 코인 수집 ${tm(s.collection_at)}</small></div>`;
  }
  return `<div class="server-work"><strong>${fresh(s)?'코스피·곱버스 가격·거래량 수집':'수집 상태 갱신 확인 필요'}</strong><p>${(s.data||[]).map(x=>`${esc(names[x.symbol]||x.symbol)} ${tm(x.latest_bar,true)}`).join('<br>')||'최신 봉 기록 없음'}</p><small>수집 실행 ${tm(s.collection_at)} · A1 전송 ${tm(s.sync_at)}<br>실행 시각과 새 봉 추가는 별개 · 휴장 중에는 봉이 늘지 않습니다.</small></div>`;
+}
+const predictionJobNames={crypto:'코인 전략 검사',etf:'ETF 전략 검사',forecast:'5분 예측 갱신',comparison:'정기 비교 검증'};
+function predictionStateLabel(state){return {running:'실행 중',waiting:'정기 실행 대기',stopped:'예약 실행 중지',error:'실행 오류',stale:'완료 기록 지연',degraded:'일부 작업 점검 필요',unavailable:'실행 확인 필요'}[state]||'실행 확인 필요';}
+function researchHealthy(s){return s?.research_runtime?['running','waiting'].includes(s.research_runtime.state):s?.service?.ActiveState==='active';}
+function renderPredictionWork(a){
+ const runtime=a?.research_runtime;if(!runtime)return;
+ const status=fresh(a)?predictionStateLabel(runtime.state):'최신 상태 확인 필요';
+ document.getElementById('activity').textContent='A1 LightGBM 연구 · '+status;
+ document.getElementById('work-current').textContent='LightGBM 예측 · Ridge 비교 · '+status;
+ document.getElementById('work-description').textContent='완료된 5분봉으로 1시간·4시간·하루 뒤를 예측하고, 거래비용을 반영해 코인·ETF 전략을 검사합니다.';
+ document.getElementById('work-latest').textContent=(runtime.jobs||[]).map(j=>`${predictionJobNames[j.id]||'연구'} 최근 완료 ${tm(j.last_completed_at,true)}`).join(' / ');
+ document.getElementById('work-ideas').textContent='정기 실행 사이의 대기는 정상입니다. 새 자료와 체결 결과를 반영하며, 매수는 전략 검증과 주문 조건을 통과할 때만 실행합니다.';
 }
 
 function renderOverview(data,r){
@@ -321,7 +336,7 @@ function render(data){
  if(typeof renderStrategyFleet==='function')renderStrategyFleet(document.getElementById('strategy-fleet'),data.strategy_nodes,data.strategy_observed_at);
  if(typeof renderCapitalBudget==='function')renderCapitalBudget(data.strategy_nodes?.AMD2?.runtime?.capital_budget);
  document.getElementById('strategy-observed').textContent='새 연구 확인 '+tm(data.strategy_observed_at,true)+(data.strategy_stale?' · 갱신 지연':'');
- const servers=data.servers||{},a=servers.a1,r=a?.research,rows=r?.rows||[],healthy=fresh(a)&&a.service?.ActiveState==='active';
+ const servers=data.servers||{},a=servers.a1,r=a?.research,rows=r?.rows||[],healthy=fresh(a)&&researchHealthy(a);
  document.getElementById('connection').textContent='최근 조회 '+tm(data.updated_at);
  document.getElementById('connection').className=Object.values(servers).length===3&&Object.values(servers).every(fresh)?'ok':'warn';
  for(const [id,value] of [['evaluations',r?.evaluations],['structures',r?.unique_structures],['passes',r?.passes]])document.getElementById(id).textContent=value==null?'—':fmt(value);
@@ -341,16 +356,19 @@ function render(data){
  renderDiscovery(r);
  renderOverview(data,r);
  renderActivity(data,r);
+ renderPredictionWork(a);
  document.getElementById('servers').innerHTML=Object.entries(roles).map(([key,[name,role]])=>{
   const s=servers[key];if(!s)return `<article class="card"><div class="server-name">${name}</div><p>${role}</p><small>조회 중…</small></article>`;
-  const good=fresh(s),service=key!=='a1'||s.service?.ActiveState==='active';
-  const details=key==='a1'?`연구 서비스 ${esc(s.service?.ActiveState||'미확인')} · 자동 재시작 ${esc(s.service?.NRestarts??'—')}회<br>연구 로그 ${tm(s.research?.log_updated)}<br>디스크 여유 ${esc(s.disk_free_gb)} GB`:`분봉 수집 기록 ${tm(s.collection_at)}<br>A1 전송 기록 ${tm(s.sync_at)}${key==='amd1'?`<br>거래 봇 최근 실행 ${tm(s.trading?.last_run,true)}${s.trading?.halted?' · 정지 상태':''}`:''}`;
-  return `<article class="card"><div class="row"><span class="server-name">${name}</span>${badge(!good?'연결 확인 필요':!service?'연구 정지':'연결됨',good&&service?'ok':'bad')}</div>${serverWork(key,s,r)}<details class="server-extra"><summary>실행 기록 보기</summary><div class="details">${details}</div></details><small>서버 확인 ${tm(s.checked_at)}</small></article>`;
+  const good=fresh(s),service=key!=='a1'||researchHealthy(s);
+  const details=key==='a1'?(s.research_runtime?`현재 연구 ${esc(predictionStateLabel(s.research_runtime.state))} · 확인 ${tm(s.research_runtime.observed_at,true)}<br>이전 연구 서비스 ${esc(s.service?.ActiveState||'미확인')}<br>디스크 여유 ${esc(s.disk_free_gb)} GB`:`연구 서비스 ${esc(s.service?.ActiveState||'미확인')} · 자동 재시작 ${esc(s.service?.NRestarts??'—')}회<br>연구 로그 ${tm(s.research?.log_updated)}<br>디스크 여유 ${esc(s.disk_free_gb)} GB`):`분봉 수집 기록 ${tm(s.collection_at)}<br>A1 전송 기록 ${tm(s.sync_at)}${key==='amd1'?`<br>거래 봇 최근 실행 ${tm(s.trading?.last_run,true)}${s.trading?.halted?' · 정지 상태':''}`:''}`;
+  const label=!good?'연결 확인 필요':key==='a1'&&s.research_runtime?(service?'연구 정상':predictionStateLabel(s.research_runtime.state)):!service?'연구 정지':'연결됨';
+  return `<article class="card"><div class="row"><span class="server-name">${name}</span>${badge(label,good&&service?'ok':'bad')}</div>${serverWork(key,s,r)}<details class="server-extra"><summary>실행 기록 보기</summary><div class="details">${details}</div></details><small>서버 확인 ${tm(s.checked_at)}</small></article>`;
  }).join('');
  document.getElementById('research').innerHTML=['KRW-BTC','KRW-ETH','KRW-XRP','KRW-USDT','226490','252670'].map(symbol=>{const name=names[symbol];const set=rows.filter(x=>x.symbol===symbol);if(!set.length)return `<tr><td>${name}</td><td colspan="5">조회 결과 없음</td></tr>`;const latest=set.map(x=>x.updated_at).sort().at(-1);const cell=rule=>{const x=set.find(x=>x.rule===rule);return x?fmt(x.evaluations):'—'};return `<tr><td><span class="symbol">${name}</span><span class="sub">${symbol}</span></td><td class="num">${cell('15min')}</td><td class="num">${cell('60min')}</td><td class="num">${fmt(set.reduce((n,x)=>n+x.passes,0))}</td><td>${badge(stateLabel(set),'warn')}</td><td>${tm(latest)}</td></tr>`}).join('');
  document.getElementById('collection').innerHTML=['amd1','amd2'].flatMap(key=>(servers[key]?.data||[]).map(d=>`<tr><td>${roles[key][0]}${fresh(servers[key])?'':' · 이전 기록'}</td><td>${esc(names[d.symbol]||d.symbol)}</td><td>${tm(d.latest_bar,true)}</td><td>${tm(d.updated_at,true)}</td></tr>`)).join('')||'<tr><td colspan="4">조회 결과 없음</td></tr>';
  const errors=Object.entries(servers).filter(([,s])=>!fresh(s)).map(([k,s])=>`${roles[k][0]}: ${s.error||'최근 조회가 오래되었습니다.'} 마지막 성공 ${tm(s.checked_at,true)}`);
- if(healthy&&r?.log_updated&&Date.now()-date(r.log_updated)>15*60000)errors.push('A1 연구 로그가 15분 넘게 갱신되지 않았습니다. 진행 상태를 확인해야 합니다.');
+ if(a?.research_runtime&&fresh(a)&&!healthy)errors.push('A1 LightGBM 연구: '+predictionStateLabel(a.research_runtime.state));
+ if(!a?.research_runtime&&healthy&&r?.log_updated&&Date.now()-date(r.log_updated)>15*60000)errors.push('A1 연구 로그가 15분 넘게 갱신되지 않았습니다. 진행 상태를 확인해야 합니다.');
  document.getElementById('errors').textContent=errors.join('\n');
 }
 let loading=false,lastUpdated=null;
