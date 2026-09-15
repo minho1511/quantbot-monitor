@@ -135,8 +135,9 @@
         if(staging.proposed?.length)installed.append(el('p','개별·조합 검증이 끝난 준비 구성: '+staging.proposed.map(x=>x.slice(0,10)).join(' · ')+(staging.proposed.some(id=>!attached?.includes(id))?' · 미장착 후보의 보유분 전환 검증은 별도':''),'strategy-note'));
       }else if(!attached?.length)installed.append(el('p',attached&&runtime.new_state==='executor_not_connected'?'새 통과 전략: 아직 미장착 · 실행기 연결 대기':'새 전략 장착 상태: 서버 적용 기록 확인 필요','strategy-wait'));
       installed.append(el('p','기존 실행 설정 확인 '+at(runtime.observed_at),'strategy-note'));card.append(installed);
-      card.append(el('h4','검증 통과 후보'));
-      card.append(el('p','같은 전략의 반복 평가를 합쳐 표시합니다. 아래 수익률은 표시된 검증 기간의 백테스트 결과입니다.','strategy-note'));
+      const candidates=el('details',null,'strategy-candidates');candidates.dataset.key=node+':candidates';candidates.open=opened.has(candidates.dataset.key);
+      candidates.append(el('summary','후보 검증 이력 · '+(d.candidates||[]).length+'개'));
+      candidates.append(el('p','과거 통과 후 현재 미통과인 후보도 포함합니다. 아래 수익률은 표시된 과거 검증 기간의 백테스트 결과이며, 현재 실전 선정 여부와는 다릅니다. 같은 전략의 반복 평가는 합쳐 표시합니다.','strategy-note'));
       const list=el('div',null,'strategy-list');
       for(const c of d.candidates||[]){
         const passed=c.qualification==='passed', applied=attached?.includes(c.id), item=el('article',null,'strategy-item'+(passed?'':' pending'));item.dataset.strategy=c.id;
@@ -155,7 +156,7 @@
       }
       if(!list.children.length)list.append(el('p','아직 백테스트 통과 후보가 없습니다.','strategy-none'));
       if(d.issues?.length)list.append(el('p','일부 후보의 근거 파일 확인이 필요합니다.','strategy-wait'));
-      card.append(list);host.append(card);
+      candidates.append(list);card.append(candidates);host.append(card);
     }
   };
 })();
