@@ -46,6 +46,7 @@ button:disabled{opacity:.7;cursor:wait}
 <main>
 <header><div><div class="eyebrow">ORACLE QUANTBOT · LIVE MONITOR</div><h1>오라클 퀀트봇</h1><div class="muted">전략을 만들고, 새 데이터로 검증하는 과정</div></div><div style="text-align:right"><button id="refresh" type="button" title="최근에 게시된 상태를 다시 불러옵니다.">화면 새로고침</button><div id="refresh-status" class="label" role="status" aria-live="polite"></div><div id="connection" class="muted">서버 확인 중…</div></div></header>
 <div class="notice" id="activity" role="status">세 서버에서 현재 상태를 읽어오고 있어요.</div>
+<div class="notice" id="discovery-progress" hidden aria-label="연속 전략 탐색 현황"></div>
 <nav class="quick-nav" aria-label="화면 바로가기"><a href="#portfolio">자산·실전 성과</a><a href="#strategy-deployment">장착 전략</a><a href="#model-comparison">모델 비교</a><a href="#overview">한눈에 보기</a><a href="#recent-changes">최근 변화</a><a href="#etf-discovery">전략 연구</a><a href="#current-paper">모의 성적</a><a href="#data-collection">데이터</a><a href="#history">이전 연구</a></nav>
 <section class="panel" id="portfolio"><div class="section-kicker">AMD1 · 업비트 실계좌</div><h2>내 자산과 실전 전략 성과</h2><div id="portfolio-assets"><p class="muted">자산 조회 기록 확인 중</p></div></section>
 <section class="panel" id="strategy-deployment"><div class="section-kicker">새 체계 · AMD1 / AMD2</div><h2>장착 전략과 백테스트 통과 후보</h2><p class="work-note" id="strategy-observed">새 전략 상태 확인 중</p><div id="strategy-fleet"></div><p class="foot">아래의 이전 연구·모의 관찰 집계와 구분한 새 연구 결과입니다. 실제 자산·매수 내역·매도 조건은 위의 자산 현황에서 확인합니다.</p></section><section id="overview" aria-label="현재 ETF 연구 요약"><div class="section-heading"><h2>지금 어떻게 돌아가고 있나</h2><span class="muted">KODEX 코스피 · 곱버스</span></div><div class="cards overview-cards">
@@ -333,6 +334,7 @@ function renderPredictionWork(a){
    const age=d.observed_at?Date.now()-date(d.observed_at):NaN;const current=Number.isFinite(age)&&age>=0&&age<900000;
    return `${node}: ${d.state==='exploring'&&current?'탐색 중':'탐색 상태 확인 필요'} · 현재 검증 구간 개발 평가 ${d.evaluated??0}개 · 설정 개선 ${d.improvements??0}개 · 실전 결과 재연구 ${d.live_feedback_trials??0}개 · 검증 대기 후보 ${d.shortlist_size??0}개 · 최종 검증 자료 ${tm(d.validation_end,true)}까지`;
   }).join(' / ');
+  const progress=document.getElementById('discovery-progress');progress.hidden=false;progress.textContent=document.getElementById('work-ideas').textContent;
  }
 }
 
