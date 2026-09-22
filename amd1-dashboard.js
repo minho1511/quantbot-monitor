@@ -102,7 +102,7 @@
     const f=n=>Number(n).toFixed(2), candleWidth=Math.max(.8,Math.min(12,plotWidth*step/(end-first)*.65));
     let svg='<svg viewBox="0 0 '+width+' '+height+'" xmlns="http://www.w3.org/2000/svg" aria-label="'+ticker+' 캔들 차트, 원화 가격, 아래 막대는 거래량"><g font-family="system-ui" font-size="10" fill="#94a3b5">';
     for(let i=0;i<=4;i++){const price=low+(high-low)*i/4, yy=y(price);svg+='<path d="M'+left+' '+f(yy)+' H'+(width-right)+'" stroke="#25303c" stroke-dasharray="3 4"/><text x="'+(width-right+7)+'" y="'+f(yy+3)+'">'+(price/10000).toFixed(0)+'만</text>';}
-    for(let i=0;i<4;i++){const at=first+(end-first)*i/3, label=new Date(at*1000).toLocaleString('ko-KR',{timeZone:'Asia/Seoul',...(range==='1d'?{hour:'2-digit',minute:'2-digit',hour12:false}:{month:'2-digit',day:'2-digit'})});svg+='<text x="'+f(x(at))+'" y="'+(height-6)+'" text-anchor="'+(i===0?'start':i===3?'end':'middle')+'">'+esc(label)+'</text>';}
+    for(let i=0;i<4;i++){const at=first+(end-first)*i/3, label=new Date(at*1000).toLocaleString('ko-KR',{timeZone:'Asia/Seoul',...(end-first<=2*86400?{hour:'2-digit',minute:'2-digit',hour12:false}:{...(end-first>90*86400?{year:'2-digit'}:{}),month:'2-digit',day:'2-digit'})});svg+='<text x="'+f(x(at))+'" y="'+(height-6)+'" text-anchor="'+(i===0?'start':i===3?'end':'middle')+'">'+esc(label)+'</text>';}
     const maxVolume=Math.max(...bars.map(b=>b[5]),1), paths=[{wick:'',body:'',volume:''},{wick:'',body:'',volume:''}];
     for(const b of bars){const xx=x(b[0]+step/2), p=paths[b[4]>=b[1]?1:0], volume=b[5]/maxVolume*24;
       p.wick+='M'+f(xx)+' '+f(y(b[2]))+'V'+f(y(b[3]));
@@ -126,7 +126,7 @@
       const at=first+(px-left)/plotWidth*(end-first);
       const b=bars.reduce((best,item)=>Math.abs(item[0]-at)<Math.abs(best[0]-at)?item:best,bars[0]);
       const line=$('crosshair');line.setAttribute('d','M'+f(x(b[0]+step/2))+' '+top+' V'+(height-25));line.style.display='';
-      set('chart-detail',(daily?time:shortTime)(new Date(b[0]*1000).toISOString())+' · 시가 '+money(b[1])+' / 고가 '+money(b[2])+' / 저가 '+money(b[3])+' / 종가 '+money(b[4])+' · 거래량 '+qty(b[5])+' '+ticker+(daily?' · 일봉 (09:00 시작)':' · 원천 '+b[6]+'/'+step/60+'분'));
+      set('chart-detail',(daily||end-first>90*86400?time:shortTime)(new Date(b[0]*1000).toISOString())+' · 시가 '+money(b[1])+' / 고가 '+money(b[2])+' / 저가 '+money(b[3])+' / 종가 '+money(b[4])+' · 거래량 '+qty(b[5])+' '+ticker+(daily?' · 일봉 (09:00 시작)':' · 원천 '+b[6]+'/'+step/60+'분'));
     });
     host.querySelectorAll('[data-marker]').forEach(node=>{
       const show=()=>{const m=markers[Number(node.dataset.marker)];set('chart-detail',(m.kind==='fill'?'실제 체결 · '+owner(m.owner):'UT 지표 신호 · 일봉 재계산')+' · '+(m.side==='buy'?'BUY 매수':'SELL 매도')+' · '+time(m.kind==='fill'?m.filled_at:m.at)+' · '+money(m.price)+(m.kind==='fill'?' · 수량 '+qty(m.volume)+' '+ticker:''));};
