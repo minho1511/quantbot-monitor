@@ -14,7 +14,21 @@
   const coin = symbol => ({'KRW-BTC':'비트코인','KRW-ETH':'이더리움','KRW-XRP':'리플'}[symbol] || symbol?.replace('KRW-', '') || '—');
   const owner = x => ({utbot:'UT Bot', redesign:'이전 연구 전략', unattributed:'귀속 미확인'}[x] || '귀속 미확인');
   const side = x => '<span class="side '+(x === 'buy' ? 'buy' : 'sell')+'">'+(x === 'buy' ? 'BUY · 매수' : 'SELL · 매도')+'</span>';
-  let current = null, range = '30d', fetching = false;
+  let current = null, range = '30d', chartSymbol = 'KRW-BTC', timeframe = '1h', view = null, bounds = null, fetching = false;
+  let drag = null, frame = null, manualView = false;
+  function requestChart() { if(frame===null)frame=requestAnimationFrame(()=>{frame=null;renderChart();}); }
+  function clampView(from,to) {
+    if(!bounds)return;
+    const span=Math.min(bounds.to-bounds.from,Math.max(bounds.step,to-from));
+    from=Math.max(bounds.from,Math.min(from,bounds.to-span));
+    view={from,to:from+span};
+  }
+  function zoom(factor,anchor=.5) {
+    if(!view||!bounds)return;
+    manualView=true;
+    const span=view.to-view.from, at=view.from+span*anchor;
+    clampView(at-span*factor*anchor,at+span*factor*(1-anchor));requestChart();
+  }
   function set(id, value, cls) { $(id).textContent = value; if (cls !== undefined) $(id).className = cls; }
   function notice(message, level='') { set('notice', message, 'notice '+level); }
   function render(data) {
@@ -58,22 +72,45 @@
   }
   function renderChart() {
     if (!current) return;
-    const host=$('chart'), bars=current.chart?.series?.[range]||[];
-    if (!bars.length) { host.innerHTML='<p class="empty">이 기간의 비트코인 분봉 자료가 없습니다.</p>';set('btc-price','확인 대기');set('btc-change','');return; }
-    const step=({'1d':5,'7d':30,'30d':60}[range])*60, first=bars[0][0], end=bars.at(-1)[0]+step;
-    const fills=$('show-fills').checked?(current.trades||[]).filter(x=>x.symbol==='KRW-BTC'&&x.filled_at).map(x=>({...x,kind:'fill',t:Date.parse(x.filled_at)/1000})):[];
-    const signals=$('show-signals').checked?(current.signals||[]).filter(x=>x.symbol==='KRW-BTC').map(x=>({...x,kind:'signal',t:Date.parse(x.at)/1000})):[];
+    const host=$('chart'), chart=current.charts?.[chartSymbol], all=chart?.series?.[timeframe]||[];
+    const ticker=chartSymbol.replace('KRW-','');
+    $('chart-heading').innerHTML=coin(chartSymbol)+' <span class="muted small">'+ticker+' / KRW</span>';
+    host.setAttribute('aria-label',coin(chartSymbol)+' 가격과 매매 시점 그래프');
+    if (!all.length) { bounds=null;host.innerHTML='<p class="empty">이 봉 주기의 '+coin(chartSymbol)+' 가격 자료가 없습니다.</p>';set('btc-price','확인 대기');set('btc-change','');set('chart-note','자료 수신 대기');set('chart-detail','다른 종목 또는 봉 주기를 선택해 주세요.');return; }
+    const daily=timeframe==='1d', step=({'1h':3600,'6h':21600,'1d':86400}[timeframe]);
+    bounds={from:all[0][0],to:all.at(-1)[0]+step,step};
+    if(!view||!manualView){
+      let from=bounds.to-({'1d':1,'7d':7,'30d':30}[range]||365)*86400;
+      if(['3m','6m','1y'].includes(range)){
+        const date=new Date(bounds.to*1000), day=date.getUTCDate();
+        date.setUTCDate(1);date.setUTCMonth(date.getUTCMonth()-({'3m':3,'6m':6,'1y':12}[range]));
+        const lastDay=new Date(Date.UTC(date.getUTCFullYear(),date.getUTCMonth()+1,0)).getUTCDate();
+        date.setUTCDate(Math.min(day,lastDay));from=date.getTime()/1000;
+      }
+      view={from:Math.max(bounds.from,from),to:bounds.to};
+    } else clampView(view.from,view.to);
+    const first=view.from,end=view.to,bars=all.filter(b=>b[0]+step>first&&b[0]<end);
+    if(!bars.length){host.innerHTML='<p class="empty">이 구간에는 저장된 봉이 없습니다. 드래그하거나 다른 기간을 선택하세요.</p>';return;}
+    host.dataset.visibleBars=String(bars.length);host.dataset.viewFrom=String(first);host.dataset.viewTo=String(end);
+    const fills=$('show-fills').checked?(current.trades||[]).filter(x=>x.symbol===chartSymbol&&x.filled_at).map(x=>({...x,kind:'fill',t:Date.parse(x.filled_at)/1000})):[];
+    const signals=$('show-signals').checked?(current.signals||[]).filter(x=>x.symbol===chartSymbol).map(x=>({...x,kind:'signal',t:Date.parse(x.at)/1000})):[];
     const markers=[...fills,...signals].filter(x=>x.t>=first&&x.t<end&&Number.isFinite(x.price));
     const width=Math.max(host.clientWidth,260), height=host.clientHeight, left=6, right=64, top=20, bottom=height-62, plotWidth=width-left-right;
     let low=Math.min(...bars.map(x=>x[3]),...markers.map(x=>x.price)), high=Math.max(...bars.map(x=>x[2]),...markers.map(x=>x.price));
     const pad=Math.max((high-low)*.12,high*.001);low-=pad;high+=pad;
     const x=t=>left+(t-first)/(end-first)*plotWidth, y=p=>top+(high-p)/(high-low)*(bottom-top), color=p=>p?'#65deb0':'#ff8394';
     const f=n=>Number(n).toFixed(2), candleWidth=Math.max(.8,Math.min(12,plotWidth*step/(end-first)*.65));
-    let svg='<svg viewBox="0 0 '+width+' '+height+'" xmlns="http://www.w3.org/2000/svg" aria-label="BTC 캔들 차트, 원화 가격, 아래 막대는 거래량"><g font-family="system-ui" font-size="10" fill="#94a3b5">';
+    let svg='<svg viewBox="0 0 '+width+' '+height+'" xmlns="http://www.w3.org/2000/svg" aria-label="'+ticker+' 캔들 차트, 원화 가격, 아래 막대는 거래량"><g font-family="system-ui" font-size="10" fill="#94a3b5">';
     for(let i=0;i<=4;i++){const price=low+(high-low)*i/4, yy=y(price);svg+='<path d="M'+left+' '+f(yy)+' H'+(width-right)+'" stroke="#25303c" stroke-dasharray="3 4"/><text x="'+(width-right+7)+'" y="'+f(yy+3)+'">'+(price/10000).toFixed(0)+'만</text>';}
     for(let i=0;i<4;i++){const at=first+(end-first)*i/3, label=new Date(at*1000).toLocaleString('ko-KR',{timeZone:'Asia/Seoul',...(range==='1d'?{hour:'2-digit',minute:'2-digit',hour12:false}:{month:'2-digit',day:'2-digit'})});svg+='<text x="'+f(x(at))+'" y="'+(height-6)+'" text-anchor="'+(i===0?'start':i===3?'end':'middle')+'">'+esc(label)+'</text>';}
-    const maxVolume=Math.max(...bars.map(b=>b[5]),1);
-    for(const b of bars){const xx=x(b[0]+step/2), c=color(b[4]>=b[1]);svg+='<path d="M'+f(xx)+' '+f(y(b[2]))+' V'+f(y(b[3]))+'" stroke="'+c+'" opacity=".65"/><rect x="'+f(xx-candleWidth/2)+'" y="'+f(Math.min(y(b[1]),y(b[4])))+'" width="'+f(candleWidth)+'" height="'+f(Math.max(1,Math.abs(y(b[1])-y(b[4]))))+'" fill="'+c+'"/><rect x="'+f(xx-candleWidth/2)+'" y="'+f(height-27-b[5]/maxVolume*24)+'" width="'+f(candleWidth)+'" height="'+f(b[5]/maxVolume*24)+'" fill="'+c+'" opacity=".28"/>';}
+    const maxVolume=Math.max(...bars.map(b=>b[5]),1), paths=[{wick:'',body:'',volume:''},{wick:'',body:'',volume:''}];
+    for(const b of bars){const xx=x(b[0]+step/2), p=paths[b[4]>=b[1]?1:0], volume=b[5]/maxVolume*24;
+      p.wick+='M'+f(xx)+' '+f(y(b[2]))+'V'+f(y(b[3]));
+      p.body+='M'+f(xx-candleWidth/2)+' '+f(Math.min(y(b[1]),y(b[4])))+'h'+f(candleWidth)+'v'+f(Math.max(1,Math.abs(y(b[1])-y(b[4]))))+'h-'+f(candleWidth)+'Z';
+      p.volume+='M'+f(xx-candleWidth/2)+' '+f(height-27-volume)+'h'+f(candleWidth)+'v'+f(volume)+'h-'+f(candleWidth)+'Z';
+    }
+    svg+='<defs><clipPath id="price-clip"><rect x="'+left+'" y="0" width="'+plotWidth+'" height="'+height+'"/></clipPath></defs><g clip-path="url(#price-clip)">';
+    paths.forEach((p,i)=>{const c=color(i);svg+='<path d="'+p.wick+'" stroke="'+c+'" opacity=".65"/><path d="'+p.body+'" fill="'+c+'"/><path d="'+p.volume+'" fill="'+c+'" opacity=".28"/>';});svg+='</g>';
     svg+='</g><path id="crosshair" stroke="#94a3b5" stroke-dasharray="3 3" style="display:none"/>';
     markers.forEach((m,i)=>{const xx=x(m.t), yy=y(m.price), c=color(m.side==='buy'), offset=m.kind==='fill'?17:42, markerY=yy+(m.side==='buy'?offset:-offset);
       const label=(m.kind==='fill'?'실제 체결':'UT 지표 신호')+' · '+(m.side==='buy'?'매수':'매도')+' · '+time(m.kind==='fill'?m.filled_at:m.at)+' · '+money(m.price);
@@ -81,18 +118,18 @@
       svg+=m.kind==='fill'?'<circle cx="'+f(xx)+'" cy="'+f(markerY)+'" r="9" fill="'+c+'" stroke="#0b1015" stroke-width="1.5"/><text x="'+f(xx)+'" y="'+f(markerY+3.4)+'" text-anchor="middle" fill="#0b1015" font-size="9" font-weight="800">'+(m.side==='buy'?'B':'S')+'</text>':'<path d="M'+f(xx)+' '+f(markerY-7)+' l7 7 -7 7 -7 -7Z" fill="#121a22" stroke="'+c+'" stroke-width="2"/>';
       svg+='</g>';});
     host.innerHTML=svg+'</svg>';
-    const last=bars.at(-1)[4];set('btc-price',money(last));set('btc-change',pct(last/bars[0][1]-1)+' · 선택 구간',sign(last/bars[0][1]-1));
-    set('chart-note',({'1d':'5분','7d':'30분','30d':'1시간'}[range])+'봉 · 수집된 1분봉 집계 · 마지막 분봉 '+shortTime(current.chart.latest_at)+(stale(current.chart.latest_at)?' · 시세 갱신 지연':'')+' · 일부 봉은 진행 중이거나 원천 분봉이 비어 있을 수 있습니다.');
+    const last=all.at(-1)[4];set('btc-price',money(last));set('btc-change',pct(bars.at(-1)[4]/bars[0][1]-1)+' · 화면 구간',sign(bars.at(-1)[4]/bars[0][1]-1));
+    set('chart-note',(daily?'일봉 · 업비트 마감 일봉 + 당일 수집 분봉':(timeframe==='6h'?'6시간':'1시간')+'봉 · 수집된 1분봉 집계')+' · '+bars.length+'개 봉 · 마지막 분봉 '+shortTime(chart.latest_at)+(stale(chart.latest_at)?' · 시세 갱신 지연':'')+' · 일부 봉은 진행 중이거나 원천 분봉이 비어 있을 수 있습니다. 매매·지표 표시는 최근 30일 기준입니다.');
     host.querySelector('svg').addEventListener('pointermove',event=>{
-      if(event.target.closest('[data-marker]'))return;
+      if(drag||event.target.closest('[data-marker]'))return;
       const px=event.clientX-host.getBoundingClientRect().left;
       const at=first+(px-left)/plotWidth*(end-first);
       const b=bars.reduce((best,item)=>Math.abs(item[0]-at)<Math.abs(best[0]-at)?item:best,bars[0]);
       const line=$('crosshair');line.setAttribute('d','M'+f(x(b[0]+step/2))+' '+top+' V'+(height-25));line.style.display='';
-      set('chart-detail',shortTime(new Date(b[0]*1000).toISOString())+' · 시가 '+money(b[1])+' / 고가 '+money(b[2])+' / 저가 '+money(b[3])+' / 종가 '+money(b[4])+' · 거래량 '+qty(b[5])+' BTC · 원천 '+b[6]+'/'+step/60+'분');
+      set('chart-detail',(daily?time:shortTime)(new Date(b[0]*1000).toISOString())+' · 시가 '+money(b[1])+' / 고가 '+money(b[2])+' / 저가 '+money(b[3])+' / 종가 '+money(b[4])+' · 거래량 '+qty(b[5])+' '+ticker+(daily?' · 일봉 (09:00 시작)':' · 원천 '+b[6]+'/'+step/60+'분'));
     });
     host.querySelectorAll('[data-marker]').forEach(node=>{
-      const show=()=>{const m=markers[Number(node.dataset.marker)];set('chart-detail',(m.kind==='fill'?'실제 체결 · '+owner(m.owner):'UT 지표 신호 · 일봉 재계산')+' · '+(m.side==='buy'?'BUY 매수':'SELL 매도')+' · '+time(m.kind==='fill'?m.filled_at:m.at)+' · '+money(m.price)+(m.kind==='fill'?' · 수량 '+qty(m.volume)+' BTC':''));};
+      const show=()=>{const m=markers[Number(node.dataset.marker)];set('chart-detail',(m.kind==='fill'?'실제 체결 · '+owner(m.owner):'UT 지표 신호 · 일봉 재계산')+' · '+(m.side==='buy'?'BUY 매수':'SELL 매도')+' · '+time(m.kind==='fill'?m.filled_at:m.at)+' · '+money(m.price)+(m.kind==='fill'?' · 수량 '+qty(m.volume)+' '+ticker:''));};
       node.addEventListener('click',show);node.addEventListener('focus',show);node.addEventListener('pointerenter',show);
       node.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();show();}});
     });
@@ -114,7 +151,29 @@
     } finally { clearTimeout(timeout);fetching=false;$('refresh').disabled=false; }
   }
   $('refresh').addEventListener('click',refresh);
-  $('ranges').addEventListener('click',e=>{const button=e.target.closest('[data-range]');if(!button)return;range=button.dataset.range;$('ranges').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));renderChart();});
+  $('chart-symbols').addEventListener('click',e=>{const button=e.target.closest('[data-symbol]');if(!button)return;chartSymbol=button.dataset.symbol;$('chart-symbols').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));set('chart-detail','봉이나 B/S 표시를 누르면 가격과 시각을 확인할 수 있습니다.');renderChart();});
+  $('ranges').addEventListener('click',e=>{const button=e.target.closest('[data-range]');if(!button)return;range=button.dataset.range;view=null;manualView=false;$('ranges').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));renderChart();});
+  $('timeframe').addEventListener('change',()=>{timeframe=$('timeframe').value;renderChart();});
+  $('zoom-in').addEventListener('click',()=>zoom(.65));$('zoom-out').addEventListener('click',()=>zoom(1.5));
+  $('chart-reset').addEventListener('click',()=>{view=null;manualView=false;renderChart();});
+  $('chart').addEventListener('wheel',e=>{
+    if(!bounds)return;e.preventDefault();
+    const rect=$('chart').getBoundingClientRect(), anchor=Math.max(0,Math.min(1,(e.clientX-rect.left-6)/(rect.width-70)));
+    zoom(Math.exp(Math.max(-300,Math.min(300,e.deltaY))*.002),anchor);
+  },{passive:false});
+  $('chart').addEventListener('pointerdown',e=>{
+    if(!view||e.button!==0||e.target.closest('[data-marker]'))return;
+    drag={x:e.clientX,from:view.from,to:view.to};$('chart').setPointerCapture(e.pointerId);$('chart').classList.add('dragging');
+  });
+  $('chart').addEventListener('pointermove',e=>{
+    if(!drag)return;
+    manualView=true;
+    const shift=(e.clientX-drag.x)/($('chart').clientWidth-70)*(drag.to-drag.from);
+    clampView(drag.from-shift,drag.to-shift);requestChart();
+  });
+  for(const event of ['pointerup','pointercancel','lostpointercapture'])$('chart').addEventListener(event,e=>{
+    drag=null;$('chart').classList.remove('dragging');if($('chart').hasPointerCapture(e.pointerId))$('chart').releasePointerCapture(e.pointerId);
+  });
   $('show-fills').addEventListener('change',renderChart);$('show-signals').addEventListener('change',renderChart);$('symbol-filter').addEventListener('change',renderJournal);
   function tab(selected) { for(const name of ['trades','signals']){$(name+'-tab').setAttribute('aria-selected',String(name===selected));$(name==='trades'?'trade-panel':'signal-panel').hidden=name!==selected;} }
   $('trades-tab').addEventListener('click',()=>tab('trades'));$('signals-tab').addEventListener('click',()=>tab('signals'));
