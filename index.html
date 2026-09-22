@@ -4,8 +4,8 @@
 <meta name="status-source" content="https://raw.githubusercontent.com/minho1511/quantbot-monitor/refs/heads/status/status.json">
 <meta name="refresh-seconds" content="60"><meta name="stale-seconds" content="900">
 <title>AMD1 투자 현황 · 오라클</title>
-<link rel="stylesheet" href="amd1-dashboard.css?v=20260922-zoom">
-<script src="amd1-dashboard.js?v=20260922-zoom" defer></script></head><body><main>
+<link rel="stylesheet" href="amd1-dashboard.css?v=20260922-ut-history">
+<script src="amd1-dashboard.js?v=20260922-ut-history" defer></script></head><body><main>
 <header><div><div class="eyebrow"><span class="brand-dot"></span> ORACLE <span class="slash">/</span> INVESTMENT MONITOR</div><h1>AMD1 투자 현황 <span class="exchange">UPBIT</span></h1><p class="muted">잔고부터 매매 시점까지, 한눈에.</p></div><div class="refresh-box"><button id="refresh" class="refresh-button">↻ 새로고침</button><p id="connection" role="status">자료를 불러오는 중</p></div></header>
 <div id="notice" class="notice" role="status">AMD1의 실제 계좌와 실행 기록을 확인하고 있습니다.</div>
 <section class="metrics" aria-label="계좌 요약">
@@ -18,7 +18,7 @@
 <div id="chart-symbols" class="segmented market-tabs" aria-label="차트 종목"><button data-symbol="KRW-BTC" aria-pressed="true">비트코인 BTC</button><button data-symbol="KRW-ETH" aria-pressed="false">이더리움 ETH</button></div>
 <div class="chart-tools"><label>봉 주기 <select id="timeframe"><option value="1h">1시간봉</option><option value="6h">6시간봉</option><option value="1d">일봉</option></select></label><div><button id="zoom-in" aria-label="차트 확대">＋</button><button id="zoom-out" aria-label="차트 축소">−</button><button id="chart-reset">선택 기간으로</button></div></div>
 <div class="price-row"><strong id="btc-price">—</strong><span id="btc-change"></span></div>
-<div class="chart-legend"><label><input id="show-fills" type="checkbox" checked><span class="legend-circle">B/S</span> 실제 체결</label><label><input id="show-signals" type="checkbox" checked><span class="legend-diamond">◇</span> UT 지표 신호</label><span><i class="buy-dot"></i> 매수 <i class="sell-dot"></i> 매도</span></div>
+<div class="chart-legend"><label><input id="show-fills" type="checkbox" checked><span class="legend-circle">B/S</span> 실제 체결</label><label><input id="show-signals" type="checkbox" checked><span class="legend-diamond">◇</span> UT 일봉 신호</label><span><i class="buy-dot"></i> 매수 <i class="sell-dot"></i> 매도</span></div>
 <div id="chart" class="chart" aria-label="비트코인 가격과 매매 시점 그래프"><p class="empty">가격 자료를 불러오는 중입니다.</p></div>
 <p id="chart-detail" class="chart-detail" aria-live="polite">휠로 확대·축소, 드래그로 이동 · B/S를 누르면 체결 내역이 표시됩니다.</p><p id="chart-note" class="foot"></p></section>
 <aside class="panel operation" aria-labelledby="operation-heading"><div class="eyebrow">AMD1 · LIVE STATUS</div><h2 id="operation-heading">지금 어떻게 운용 중인가</h2><div id="runtime-badge" class="badge">확인 중</div><h3 id="strategy-name">전략 확인 중</h3><p id="strategy-settings" class="muted"></p>
@@ -26,8 +26,8 @@
 <div id="latest-signals" class="signal-cards"></div><p class="foot">매수 신호가 나도 잔고·주문 조건에 따라 체결되지 않을 수 있습니다. 기준선은 마지막 판단값이며 예약 매도 주문이 아닙니다.</p></aside></div>
 <section class="panel" aria-labelledby="holdings-heading"><div class="section-top"><div><div class="eyebrow">MY POSITIONS</div><h2 id="holdings-heading">현재 보유 자산 <span id="holding-count" class="count">—</span></h2></div><span class="muted small">업비트 실제 잔고 기준</span></div><div class="table-wrap"><table><thead><tr><th>코인</th><th>보유 수량</th><th>평균 매수가</th><th>현재가</th><th>평가금액</th><th>평가손익 / 수익률</th><th>마지막 UT 기준선</th></tr></thead><tbody id="holdings"><tr><td colspan="7" class="empty">잔고 조회 중</td></tr></tbody></table></div><p class="foot">평가손익은 업비트 평균 매수가 기준이며 수수료 전입니다. 수동 거래를 포함한 계좌 전체 잔고입니다.</p></section>
 <section class="panel" aria-labelledby="history-heading"><div class="section-top"><div><div class="eyebrow">TRADE JOURNAL</div><h2 id="history-heading">매수·매도 기록</h2></div><label class="filter-label">종목 <select id="symbol-filter"><option value="all">전체</option><option value="KRW-BTC">비트코인</option><option value="KRW-ETH">이더리움</option></select></label></div>
-<div class="journal-tabs" role="tablist"><button id="trades-tab" role="tab" aria-selected="true" aria-controls="trade-panel">실제 체결 <span id="trade-count"></span></button><button id="signals-tab" role="tab" aria-selected="false" aria-controls="signal-panel">UT 지표 신호 <span id="signal-count"></span></button></div>
+<div class="journal-tabs" role="tablist"><button id="trades-tab" role="tab" aria-selected="true" aria-controls="trade-panel">실제 체결 <span id="trade-count"></span></button><button id="signals-tab" role="tab" aria-selected="false" aria-controls="signal-panel">UT 일봉 신호 <span id="signal-count"></span></button></div>
 <div id="trade-panel" role="tabpanel" aria-labelledby="trades-tab"><p id="trade-note" class="foot"></p><div class="table-wrap"><table><thead><tr><th>마지막 체결 시각 · KST</th><th>코인</th><th>매매</th><th>평균 체결가</th><th>체결금액 / 수량</th><th>수수료</th><th>거래 출처</th></tr></thead><tbody id="trades"><tr><td colspan="7" class="empty">체결 조회 중</td></tr></tbody></table></div></div>
-<div id="signal-panel" role="tabpanel" aria-labelledby="signals-tab" hidden><p class="foot">현재 UT 설정으로 마감 일봉의 교차 신호를 다시 계산한 기록입니다. 실제 주문·체결 내역은 ‘실제 체결’에서 확인하세요. 신호 시각은 일봉 마감 시각입니다.</p><div class="table-wrap"><table><thead><tr><th>신호 시각 · KST</th><th>코인</th><th>신호</th><th>기준 종가</th><th>ATR 추적선</th><th>기록 종류</th></tr></thead><tbody id="signals"></tbody></table></div></div></section>
+<div id="signal-panel" role="tabpanel" aria-labelledby="signals-tab" hidden><p class="foot">차트 전체 구간의 마감 일봉을 현재 UT 설정으로 다시 계산한 교차 신호입니다. 실제 주문·체결 내역은 ‘실제 체결’에서 확인하세요. 신호 시각은 일봉 마감 시각입니다.</p><div class="table-wrap"><table><thead><tr><th>신호 시각 · KST</th><th>코인</th><th>신호</th><th>기준 종가</th><th>ATR 추적선</th><th>기록 종류</th></tr></thead><tbody id="signals"></tbody></table></div></div></section>
 <footer><span>AMD1 · 업비트</span><span>시간은 한국 표준시(KST) · 수집·게시 5분 간격 · 화면 재조회 60초</span><span id="published-at"></span></footer>
 </main></body></html>

@@ -68,7 +68,7 @@
     set('trade-count', trades.length+'건');set('signal-count',signals.length+'건');
     set('trade-note','최근 30일 · '+(current.trade_complete?'거래소 체결 영수증 확인':'조회 미완료 · 이전 기록일 수 있음')+' · 확인 '+time(current.trade_observed_at)+'. 부분 체결은 주문별 합산합니다. 귀속 미확인은 수동 거래 등 출처를 확정하지 못한 거래입니다.');
     $('trades').innerHTML=trades.map(x=>'<tr><td>'+time(x.filled_at)+'<small>주문 '+time(x.ordered_at)+'</small></td><td>'+esc(coin(x.symbol))+'</td><td>'+side(x.side)+'</td><td>'+money(x.price)+'</td><td>'+money(x.funds)+'<small>'+qty(x.volume)+' '+esc(x.symbol.replace('KRW-',''))+'</small></td><td>'+money(x.fee)+'</td><td>'+owner(x.owner)+'</td></tr>').join('') || '<tr><td colspan="7" class="empty">'+(current.trade_complete?'최근 30일에 해당 종목의 체결 내역이 없습니다.':'체결 내역을 확인하지 못했습니다. 거래 0건을 뜻하지 않습니다.')+'</td></tr>';
-    $('signals').innerHTML=signals.map(x=>'<tr><td>'+time(x.at)+'</td><td>'+esc(coin(x.symbol))+'</td><td>'+side(x.side)+'</td><td>'+money(x.price)+'</td><td>'+money(x.stop)+'</td><td>일봉 지표 재계산</td></tr>').join('') || '<tr><td colspan="6" class="empty">'+(current.signal_error?'지표 자료 확인이 필요합니다.':'최근 30일 교차 신호가 없습니다.')+'</td></tr>';
+    $('signals').innerHTML=signals.map(x=>'<tr><td>'+time(x.at)+'</td><td>'+esc(coin(x.symbol))+'</td><td>'+side(x.side)+'</td><td>'+money(x.price)+'</td><td>'+money(x.stop)+'</td><td>일봉 지표 재계산</td></tr>').join('') || '<tr><td colspan="6" class="empty">'+(current.signal_error?'지표 자료 확인이 필요합니다.':'차트 보관 구간에 교차 신호가 없습니다.')+'</td></tr>';
   }
   function renderChart() {
     if (!current) return;
@@ -113,13 +113,13 @@
     paths.forEach((p,i)=>{const c=color(i);svg+='<path d="'+p.wick+'" stroke="'+c+'" opacity=".65"/><path d="'+p.body+'" fill="'+c+'"/><path d="'+p.volume+'" fill="'+c+'" opacity=".28"/>';});svg+='</g>';
     svg+='</g><path id="crosshair" stroke="#94a3b5" stroke-dasharray="3 3" style="display:none"/>';
     markers.forEach((m,i)=>{const xx=x(m.t), yy=y(m.price), c=color(m.side==='buy'), offset=m.kind==='fill'?17:42, markerY=yy+(m.side==='buy'?offset:-offset);
-      const label=(m.kind==='fill'?'실제 체결':'UT 지표 신호')+' · '+(m.side==='buy'?'매수':'매도')+' · '+time(m.kind==='fill'?m.filled_at:m.at)+' · '+money(m.price);
+      const label=(m.kind==='fill'?'실제 체결':'UT 일봉 신호')+' · '+(m.side==='buy'?'매수':'매도')+' · '+time(m.kind==='fill'?m.filled_at:m.at)+' · '+money(m.price);
       svg+='<g class="selected-marker" data-marker="'+i+'" tabindex="0" role="button" aria-label="'+esc(label)+'"><title>'+esc(label)+'</title><path d="M'+f(xx)+' '+f(yy)+' V'+f(markerY)+'" stroke="'+c+'" pointer-events="none"/>';
       svg+=m.kind==='fill'?'<circle cx="'+f(xx)+'" cy="'+f(markerY)+'" r="9" fill="'+c+'" stroke="#0b1015" stroke-width="1.5"/><text x="'+f(xx)+'" y="'+f(markerY+3.4)+'" text-anchor="middle" fill="#0b1015" font-size="9" font-weight="800">'+(m.side==='buy'?'B':'S')+'</text>':'<path d="M'+f(xx)+' '+f(markerY-7)+' l7 7 -7 7 -7 -7Z" fill="#121a22" stroke="'+c+'" stroke-width="2"/>';
       svg+='</g>';});
     host.innerHTML=svg+'</svg>';
     const last=all.at(-1)[4];set('btc-price',money(last));set('btc-change',pct(bars.at(-1)[4]/bars[0][1]-1)+' · 화면 구간',sign(bars.at(-1)[4]/bars[0][1]-1));
-    set('chart-note',(daily?'일봉 · 업비트 마감 일봉 + 당일 수집 분봉':(timeframe==='6h'?'6시간':'1시간')+'봉 · 수집된 1분봉 집계')+' · '+bars.length+'개 봉 · 마지막 분봉 '+shortTime(chart.latest_at)+(stale(chart.latest_at)?' · 시세 갱신 지연':'')+' · 일부 봉은 진행 중이거나 원천 분봉이 비어 있을 수 있습니다. 매매·지표 표시는 최근 30일 기준입니다.');
+    set('chart-note',(daily?'일봉 · 업비트 마감 일봉 + 당일 수집 분봉':(timeframe==='6h'?'6시간':'1시간')+'봉 · 수집된 1분봉 집계')+' · '+bars.length+'개 봉 · 마지막 분봉 '+shortTime(chart.latest_at)+(stale(chart.latest_at)?' · 시세 갱신 지연':'')+' · 일부 봉은 진행 중이거나 원천 분봉이 비어 있을 수 있습니다. UT 일봉 신호는 차트 전체 구간, 실제 체결은 최근 30일 기준입니다.');
     host.querySelector('svg').addEventListener('pointermove',event=>{
       if(drag||event.target.closest('[data-marker]'))return;
       const px=event.clientX-host.getBoundingClientRect().left;
@@ -129,7 +129,7 @@
       set('chart-detail',(daily||end-first>90*86400?time:shortTime)(new Date(b[0]*1000).toISOString())+' · 시가 '+money(b[1])+' / 고가 '+money(b[2])+' / 저가 '+money(b[3])+' / 종가 '+money(b[4])+' · 거래량 '+qty(b[5])+' '+ticker+(daily?' · 일봉 (09:00 시작)':' · 원천 '+b[6]+'/'+step/60+'분'));
     });
     host.querySelectorAll('[data-marker]').forEach(node=>{
-      const show=()=>{const m=markers[Number(node.dataset.marker)];set('chart-detail',(m.kind==='fill'?'실제 체결 · '+owner(m.owner):'UT 지표 신호 · 일봉 재계산')+' · '+(m.side==='buy'?'BUY 매수':'SELL 매도')+' · '+time(m.kind==='fill'?m.filled_at:m.at)+' · '+money(m.price)+(m.kind==='fill'?' · 수량 '+qty(m.volume)+' '+ticker:''));};
+      const show=()=>{const m=markers[Number(node.dataset.marker)];set('chart-detail',(m.kind==='fill'?'실제 체결 · '+owner(m.owner):'UT 일봉 신호 · 일봉 재계산')+' · '+(m.side==='buy'?'BUY 매수':'SELL 매도')+' · '+time(m.kind==='fill'?m.filled_at:m.at)+' · '+money(m.price)+(m.kind==='fill'?' · 수량 '+qty(m.volume)+' '+ticker:''));};
       node.addEventListener('click',show);node.addEventListener('focus',show);node.addEventListener('pointerenter',show);
       node.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();show();}});
     });
