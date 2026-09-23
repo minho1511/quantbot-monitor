@@ -85,6 +85,11 @@
     if(marker.kind==='signal'){
       showSignal(marker);
       set('chart-detail','UT 일봉 '+(marker.side==='buy'?'buy 매수':'sell 매도')+' · 신호봉 '+time(marker.bar_at)+' · 확정 '+time(marker.at)+' · 종가 '+money(marker.price));
+    } else if(marker.fills.length>1){
+      const fills=marker.fills, volume=fills.reduce((sum,x)=>sum+x.volume,0), funds=fills.reduce((sum,x)=>sum+x.funds,0);
+      $('chart-detail').innerHTML='<strong>실제 '+(marker.side==='buy'?'매수':'매도')+' '+fills.length+'건 · 같은 봉의 체결 묶음</strong>'+
+        '<p>합계 '+money(funds)+' · 수량 '+qty(volume)+' '+esc(marker.symbol.replace('KRW-',''))+' · 가중 평균 '+money(volume>0?funds/volume:null)+'</p>'+
+        '<ol class="fill-events">'+fills.map(x=>'<li class="fill-event"><span>'+time(x.filled_at)+' · '+owner(x.owner)+'</span><span>'+money(x.price)+' · '+qty(x.volume)+' '+esc(x.symbol.replace('KRW-',''))+'</span></li>').join('')+'</ol>';
     } else set('chart-detail','실제 체결 · '+owner(marker.owner)+' · '+(marker.side==='buy'?'BUY 매수':'SELL 매도')+' · '+time(marker.filled_at)+' · '+money(marker.price)+' · '+qty(marker.volume)+' '+marker.symbol.replace('KRW-',''));
   }
   function showBar(bar) {
@@ -104,15 +109,22 @@
     host.dataset.viewFrom=String(view.from);host.dataset.viewTo=String(Number(view.to)+chartStep());
     host.dataset.visibleBars=String(visible.length);
     const paneHeight=priceChart.panes()[0].getHeight(), width=priceChart.timeScale().width();
-    const slots=new Map();
+    const placed=[];
     for(const marker of chartMarkers){
       const x=priceChart.timeScale().timeToCoordinate(marker.bar[0]);
-      const y=candleSeries.priceToCoordinate(marker.kind==='signal'?(marker.side==='buy'?marker.bar[3]:marker.bar[2]):marker.price);
-      const slot=marker.bar[0]+'-'+marker.side, rank=slots.get(slot)||0;slots.set(slot,rank+1);
-      const markerY=y+(marker.side==='buy'?1:-1)*(18+rank*26);
-      const shown=x!==null&&y!==null&&x>=18&&x<width-18&&markerY>=12&&markerY<paneHeight-12;
+      const y=candleSeries.priceToCoordinate(marker.side==='buy'?marker.bar[3]:marker.bar[2]);
+      marker.node.hidden=false;
+      const halfWidth=marker.node.offsetWidth/2, halfHeight=marker.node.offsetHeight/2, direction=marker.side==='buy'?1:-1;
+      let markerY=y+direction*(12+halfHeight);
+      // Keep each label in its candle's column, clearing both same-bar and adjacent-bar labels.
+      for(let attempt=0;attempt<=placed.length;attempt++){
+        const hit=placed.find(p=>Math.abs(p.x-x)<p.w+halfWidth+4&&Math.abs(p.y-markerY)<p.h+halfHeight+4);
+        if(!hit)break;
+        markerY=hit.y+direction*(hit.h+halfHeight+5);
+      }
+      const shown=x!==null&&y!==null&&x>=halfWidth&&x<width-halfWidth&&markerY>=halfHeight&&markerY<paneHeight-halfHeight;
       marker.node.hidden=!shown;
-      if(shown){marker.node.style.left=x+'px';marker.node.style.top=markerY+'px';}
+      if(shown){marker.node.style.left=x+'px';marker.node.style.top=markerY+'px';placed.push({x,y:markerY,w:halfWidth,h:halfHeight});}
     }
     if(visible.length){const change=visible.at(-1)[4]/visible[0][1]-1;set('btc-change',pct(change)+' · 화면 구간',sign(change));}
   }
@@ -200,15 +212,27 @@
     const signals=$('show-signals').checked?(current.signals||[]).filter(x=>x.symbol===chartSymbol).map(x=>({...x,kind:'signal'})):[];
     const fills=$('show-fills').checked?(current.trades||[]).filter(x=>x.symbol===chartSymbol&&x.filled_at).map(x=>({...x,kind:'fill'})):[];
     const barMap=new Map(all.map(b=>[b[0],b])),step=chartStep();
-    for(const m of [...signals,...fills]){
+    const fillGroups=new Map();
+    for(const fill of fills){
+      const key=Math.floor(epoch(fill.filled_at)/step)*step+'-'+fill.side;
+      if(!fillGroups.has(key))fillGroups.set(key,[]);
+      fillGroups.get(key).push(fill);
+    }
+    const groupedFills=[...fillGroups.values()].map(group=>{
+      group.sort((a,b)=>epoch(a.filled_at)-epoch(b.filled_at));return {...group[0],fills:group};
+    });
+    for(const m of [...signals,...groupedFills]){
       // Pine plotshape belongs to the signal candle; execution belongs to its actual fill candle.
       const at=m.kind==='signal'?(daily?epoch(m.bar_at||m.at)-(m.bar_at?0:86400):epoch(m.at)):epoch(m.filled_at);
       const bar=barMap.get(Math.floor(at/step)*step);if(!bar)continue;
       const node=document.createElement('button'),buy=m.side==='buy';
       node.type='button';node.className='chart-marker '+m.kind+'-'+m.side;node.dataset.marker=String(chartMarkers.length);
       node.dataset.kind=m.kind;node.dataset.barTime=String(bar[0]);node.dataset.eventAt=m.kind==='signal'?m.at:m.filled_at;
-      node.textContent=m.kind==='signal'?(buy?'buy':'sell'):(buy?'B':'S');
-      const label=(m.kind==='signal'?'UT 일봉 신호':'실제 체결')+' · '+(buy?'매수':'매도')+' · '+time(m.kind==='signal'?m.at:m.filled_at)+' · '+money(m.price);
+      node.dataset.side=m.side;node.dataset.count=String(m.fills?.length||1);
+      const multiple=m.kind==='fill'&&m.fills.length>1;
+      if(multiple)node.classList.add('fill-group');
+      node.textContent=m.kind==='signal'?(buy?'buy':'sell'):(buy?'B':'S')+(multiple?'×'+m.fills.length:'');
+      const label=multiple?'실제 체결 · '+(buy?'매수':'매도')+' '+m.fills.length+'건 · 봉 '+time(new Date(bar[0]*1000).toISOString())+' · 누르면 개별 체결 표시':(m.kind==='signal'?'UT 일봉 신호':'실제 체결')+' · '+(buy?'매수':'매도')+' · '+time(m.kind==='signal'?m.at:m.filled_at)+' · '+money(m.price);
       node.setAttribute('aria-label',label);node.title=label;node.hidden=true;
       const marker={...m,bar,node};node.addEventListener('click',()=>showMarker(marker));node.addEventListener('focus',()=>showMarker(marker));
       overlay.append(node);chartMarkers.push(marker);
