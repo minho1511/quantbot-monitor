@@ -5,3 +5,20 @@
 .market-tabs{width:fit-content;margin-top:15px}.market-tabs button{font-size:13px;padding:7px 16px}
 
 .chart-tools{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:var(--muted)}.chart-tools label{display:flex;align-items:center;gap:8px}.chart-tools select,.chart-tools button{padding:5px 10px;font-size:12px}.chart{cursor:crosshair;touch-action:none;user-select:none}.chart.dragging{cursor:grabbing}
+
+.chart{height:510px;background:#101722;border:1px solid #263241;border-radius:4px;overflow:hidden}
+.chart-ohlc{font-size:11px;font-variant-numeric:tabular-nums;color:#c6d2df;min-height:36px;margin-top:12px}
+.chart-overlay{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:2}
+.chart-marker{position:absolute;pointer-events:auto;transform:translate(-50%,-50%);border:0;border-radius:3px;padding:3px 7px;font-size:11px;line-height:16px;font-weight:750;color:#07130e;white-space:nowrap;min-width:29px}
+.chart-marker.signal-buy,.legend-buy{background:#00e676;color:#061b0f}
+.chart-marker.signal-sell,.legend-sell{background:#ff1744;color:#fff}
+.chart-marker.signal-buy:before{content:'';position:absolute;left:calc(50% - 4px);top:-5px;border-left:4px solid transparent;border-right:4px solid transparent;border-bottom:5px solid #00e676}
+.chart-marker.signal-sell:after{content:'';position:absolute;left:calc(50% - 4px);bottom:-5px;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid #ff1744}
+.chart-marker.fill-buy,.chart-marker.fill-sell{border:1px solid currentColor;border-radius:50%;width:23px;min-width:23px;height:23px;padding:2px;background:#101722;color:#72e6bb}
+.chart-marker.fill-sell{color:#ff8394}.chart-marker:hover{filter:brightness(1.25)}
+.legend-buy,.legend-sell{font-size:9px;line-height:14px;padding:1px 4px;border-radius:2px}
+.line-key{width:17px;border-top:2px solid #dce4f0}.stop-key{border-color:#f0bc60}
+.signal-explanation{padding:13px 15px;border-left:3px solid #00e676;background:#111f20;font-size:12px;border-radius:3px;line-height:1.8;margin-top:12px}
+.signal-explanation.sell{border-color:#ff1744;background:#251b24}.signal-explanation strong{font-size:13px}.signal-explanation p{margin:4px 0}.signal-explanation .signal-state{color:#c2cddb}
+.chart-attribution{font-size:10px;color:var(--muted);text-align:right;margin-top:8px}.chart-attribution a{color:var(--muted)}
+@media(max-width:600px){.chart{height:410px}.chart-marker{font-size:10px;padding:2px 5px}.chart-legend{gap:8px 12px}.chart-ohlc{font-size:10px;min-height:46px}.signal-explanation{padding:11px}}

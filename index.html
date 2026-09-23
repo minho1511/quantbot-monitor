@@ -4,8 +4,9 @@
 <meta name="status-source" content="https://raw.githubusercontent.com/minho1511/quantbot-monitor/refs/heads/status/status.json">
 <meta name="refresh-seconds" content="60"><meta name="stale-seconds" content="900">
 <title>AMD1 투자 현황 · 오라클</title>
-<link rel="stylesheet" href="amd1-dashboard.css?v=20260922-ut-history">
-<script src="amd1-dashboard.js?v=20260922-ut-history" defer></script></head><body><main>
+<link rel="stylesheet" href="amd1-dashboard.css?v=20260923-chart">
+<script src="vendor/lightweight-charts-5.2.1.js" defer></script>
+<script src="amd1-dashboard.js?v=20260923-chart" defer></script></head><body><main>
 <header><div><div class="eyebrow"><span class="brand-dot"></span> ORACLE <span class="slash">/</span> INVESTMENT MONITOR</div><h1>AMD1 투자 현황 <span class="exchange">UPBIT</span></h1><p class="muted">잔고부터 매매 시점까지, 한눈에.</p></div><div class="refresh-box"><button id="refresh" class="refresh-button">↻ 새로고침</button><p id="connection" role="status">자료를 불러오는 중</p></div></header>
 <div id="notice" class="notice" role="status">AMD1의 실제 계좌와 실행 기록을 확인하고 있습니다.</div>
 <section class="metrics" aria-label="계좌 요약">
@@ -16,11 +17,13 @@
 <div class="overview"><section class="panel chart-panel" aria-labelledby="chart-heading">
 <div class="section-top"><div><div class="eyebrow">MARKET & EXECUTION</div><h2 id="chart-heading">비트코인 <span class="muted small">BTC / KRW</span></h2></div><div id="ranges" class="segmented" aria-label="차트 기간"><button data-range="1d" aria-pressed="false">1일</button><button data-range="7d" aria-pressed="false">7일</button><button data-range="30d" aria-pressed="true">30일</button><button data-range="3m" aria-pressed="false">3개월</button><button data-range="6m" aria-pressed="false">6개월</button><button data-range="1y" aria-pressed="false">1년</button></div></div>
 <div id="chart-symbols" class="segmented market-tabs" aria-label="차트 종목"><button data-symbol="KRW-BTC" aria-pressed="true">비트코인 BTC</button><button data-symbol="KRW-ETH" aria-pressed="false">이더리움 ETH</button></div>
-<div class="chart-tools"><label>봉 주기 <select id="timeframe"><option value="1h">1시간봉</option><option value="6h">6시간봉</option><option value="1d">일봉</option></select></label><div><button id="zoom-in" aria-label="차트 확대">＋</button><button id="zoom-out" aria-label="차트 축소">−</button><button id="chart-reset">선택 기간으로</button></div></div>
+<div class="chart-tools"><label>봉 주기 <select id="timeframe"><option value="1h">1시간봉</option><option value="6h">6시간봉</option><option value="1d" selected>일봉</option></select></label><div><button id="zoom-in" aria-label="차트 확대">＋</button><button id="zoom-out" aria-label="차트 축소">−</button><button id="chart-reset">선택 기간으로</button></div></div>
 <div class="price-row"><strong id="btc-price">—</strong><span id="btc-change"></span></div>
-<div class="chart-legend"><label><input id="show-fills" type="checkbox" checked><span class="legend-circle">B/S</span> 실제 체결</label><label><input id="show-signals" type="checkbox" checked><span class="legend-diamond">◇</span> UT 일봉 신호</label><span><i class="buy-dot"></i> 매수 <i class="sell-dot"></i> 매도</span></div>
+<div class="chart-legend"><label><input id="show-signals" type="checkbox" checked><span class="legend-buy">buy</span><span class="legend-sell">sell</span> UT 일봉 신호</label><label><input id="show-fills" type="checkbox" checked><span class="legend-circle">B/S</span> 실제 체결</label><label><input id="show-ema" type="checkbox" checked><i class="line-key ema-key"></i> EMA 240 · 일봉</label><label><input id="show-stop" type="checkbox" checked><i class="line-key stop-key"></i> ATR 추적선 · 일봉</label></div>
+<p id="chart-ohlc" class="chart-ohlc">봉을 가리키면 시가·고가·저가·종가가 표시됩니다.</p>
 <div id="chart" class="chart" aria-label="비트코인 가격과 매매 시점 그래프"><p class="empty">가격 자료를 불러오는 중입니다.</p></div>
-<p id="chart-detail" class="chart-detail" aria-live="polite">휠로 확대·축소, 드래그로 이동 · B/S를 누르면 체결 내역이 표시됩니다.</p><p id="chart-note" class="foot"></p></section>
+<p id="chart-detail" class="chart-detail" aria-live="polite">휠로 확대·축소, 드래그로 이동 · buy/sell 또는 B/S를 누르면 근거가 표시됩니다.</p>
+<div id="signal-explanation" class="signal-explanation"></div><p id="chart-note" class="foot"></p><p class="chart-attribution">TradingView Lightweight Charts™ · Copyright (©) 2025 <a href="https://www.tradingview.com/" target="_blank" rel="noopener">TradingView, Inc.</a></p></section>
 <aside class="panel operation" aria-labelledby="operation-heading"><div class="eyebrow">AMD1 · LIVE STATUS</div><h2 id="operation-heading">지금 어떻게 운용 중인가</h2><div id="runtime-badge" class="badge">확인 중</div><h3 id="strategy-name">전략 확인 중</h3><p id="strategy-settings" class="muted"></p>
 <dl><div><dt>마지막 판단</dt><dd id="last-run">—</dd></div><div><dt>다음 예약</dt><dd id="next-run">—</dd></div><div><dt>매매 판단 주기</dt><dd id="schedule">—</dd></div><div><dt>계좌 조회</dt><dd id="account-at">—</dd></div></dl>
 <div id="latest-signals" class="signal-cards"></div><p class="foot">매수 신호가 나도 잔고·주문 조건에 따라 체결되지 않을 수 있습니다. 기준선은 마지막 판단값이며 예약 매도 주문이 아닙니다.</p></aside></div>
